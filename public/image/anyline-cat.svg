@@ -1,0 +1,96 @@
+
+<!-- <?xml version="1.0" standalone="no"?> -->
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="115.664" height="84.805" viewBox="0 0 115.664 84.805">
+  <script xlink:href="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+ <!-- xlink: -->
+  <script type="text/javascript">
+    <![CDATA[    
+
+      $(document).ready(function() {
+        function durationSlider() {
+          var listItems = $('.group-g').length;
+          var count = 1;
+          var countOut = 0;
+            
+          setInterval(function() {
+              $('.group-g.active').removeClass('active');
+              $('.group-g:eq(' + count +   ')').addClass('active'); 
+              console.log(count);
+
+              count += 1;
+              if (count >= listItems) {
+                  count = 0;
+              }
+          }, 6000);
+
+          setTimeout(function(){
+              $('.group-g.active').removeClass('active');
+              $('.group-g:eq(' + countOut +   ')').addClass('active');
+            }, 10);
+        }
+        durationSlider();
+      })
+    ]]>
+  </script>
+  <style>
+    .active .group1-rect1 {animation: col 1s linear forwards;}
+    @keyframes col {
+      0% {fill:#f9b600} 100% {fill:#238724}
+    }
+
+    .active .group1-rect2 {animation: col 1s linear forwards 1s;}
+    @keyframes col {
+      0% {fill:#f9b600} 100% {fill:#238724}
+    }
+
+    .active .group1-rect3 {animation: col 1s linear forwards 2s;}
+    @keyframes col {
+      0% {fill:#f9b600} 100% {fill:#238724}
+    }
+
+    .active .group1-rect4 {animation: col 1s linear forwards 3s;}
+    @keyframes col {
+      0% {fill:#f9b600} 100% {fill:#238724}
+    }
+
+    .active .group1-rect5 {animation: col 1s linear forwards 4s;}
+    @keyframes col {
+      0% {fill:#f9b600} 100% {fill:#238724}
+    }
+
+    .active .group1-rect6 {animation: col 1s linear forwards 5s;}
+    @keyframes col {
+      0% {fill:#f9b600} 100% {fill:#238724}
+    }
+
+  </style>
+  <g id="Group_50099" data-name="Group 50099" transform="translate(1845 -4139)">
+    <path id="Path_78012" data-name="Path 78012" d="M95.015,59.5,51.69,58.631h-.02L8.633,59.5A8.176,8.176,0,0,1,.5,51.3V8.7A8.176,8.176,0,0,1,8.632.5l43.775.869h.02L95.016.5a8.176,8.176,0,0,1,8.132,8.2V51.3A8.176,8.176,0,0,1,95.015,59.5Z" transform="translate(-1829.46 4139) rotate(15.009)" fill="#fce2ff"/>
+    <path id="Path_78013" data-name="Path 78013" d="M8.628,1A7.675,7.675,0,0,0,1,8.7V51.3A7.676,7.676,0,0,0,8.627,59l43.052-.87h.02L95.021,59a7.676,7.676,0,0,0,7.628-7.7V8.7A7.675,7.675,0,0,0,95.02,1l-42.6.87L8.628,1m.009-1,43.78.87L95.011,0a8.667,8.667,0,0,1,8.637,8.7V51.3A8.667,8.667,0,0,1,95.011,60L51.68,59.13,8.637,60A8.667,8.667,0,0,1,0,51.3V8.7A8.667,8.667,0,0,1,8.637,0Z" transform="translate(-1829.46 4139) rotate(15.009)" fill="#8e5195"/>
+    <g id="Group_50096" data-name="Group 50096" class="group1 group-g">
+      <rect class="group1-rect1" id="Rectangle_7750" data-name="Rectangle 7750" width="12" height="12" transform="translate(-1824.063 4149.766) rotate(15.009)" fill="#f9b600"/>
+      <rect class="group1-rect2" id="Rectangle_7751" data-name="Rectangle 7751" width="12" height="12" transform="translate(-1809.573 4153.651) rotate(15.009)" fill="#f9b600"/>
+      <rect class="group1-rect3" id="Rectangle_7752" data-name="Rectangle 7752" width="12" height="12" transform="translate(-1795.083 4157.536) rotate(15.009)" fill="#f9b600"/>
+      <rect class="group1-rect4" id="Rectangle_7753" data-name="Rectangle 7753" width="12" height="12" transform="translate(-1780.593 4161.421) rotate(15.009)" fill="#f9b600"/>
+      <rect class="group1-rect5" id="Rectangle_7754" data-name="Rectangle 7754" width="12" height="12" transform="translate(-1766.103 4165.306) rotate(15.009)" fill="#f9b600"/>
+      <rect class="group1-rect6" id="Rectangle_7755" data-name="Rectangle 7755" width="12" height="12" transform="translate(-1751.613 4169.191) rotate(15.009)" fill="#f9b600"/>
+    </g>
+    <g id="Group_50097" data-name="Group 50097" class="group2 group-g">
+      <rect class="group1-rect1" id="Rectangle_7750-3" data-name="Rectangle 7750" width="12" height="12" transform="translate(-1827.918 4164.145) rotate(15.009)" fill="#f9b600"/>
+      <rect class="group1-rect2" id="Rectangle_7751-3" data-name="Rectangle 7751" width="12" height="12" transform="translate(-1813.428 4168.03) rotate(15.009)" fill="#f9b600"/>
+      <rect class="group1-rect3" id="Rectangle_7752-3" data-name="Rectangle 7752" width="12" height="12" transform="translate(-1798.938 4171.915) rotate(15.009)" fill="#f9b600"/>
+      <rect class="group1-rect4" id="Rectangle_7753-3" data-name="Rectangle 7753" width="12" height="12" transform="translate(-1784.448 4175.8) rotate(15.009)" fill="#f9b600"/>
+      <rect class="group1-rect5" id="Rectangle_7754-3" data-name="Rectangle 7754" width="12" height="12" transform="translate(-1769.958 4179.685) rotate(15.009)" fill="#f9b600"/>
+      <rect class="group1-rect6" id="Rectangle_7755-3" data-name="Rectangle 7755" width="12" height="12" transform="translate(-1755.498 4183.681) rotate(15.009)" fill="#f9b600"/>
+    </g>
+    <g id="Group_50098" data-name="Group 50098" class="group3 group-g">
+      <rect class="group1-rect1" id="Rectangle_7755-2" data-name="Rectangle 7755" width="12" height="12" transform="translate(-1831.833 4178.746) rotate(15.009)" fill="#f9b600"/>
+      <rect class="group1-rect2" id="Rectangle_7750-2" data-name="Rectangle 7750" width="12" height="12" transform="translate(-1817.343 4182.631) rotate(15.009)"  fill="#f9b600"/>
+      <rect class="group1-rect3" id="Rectangle_7751-2" data-name="Rectangle 7751" width="12" height="12" transform="translate(-1802.853 4186.516) rotate(15.009)" fill="#f9b600"/>
+      <rect class="group1-rect4" id="Rectangle_7752-2" data-name="Rectangle 7752" width="12" height="12" transform="translate(-1788.363 4190.401) rotate(15.009)"  fill="#f9b600"/>
+      <rect class="group1-rect5" id="Rectangle_7753-2" data-name="Rectangle 7753" width="12" height="12" transform="translate(-1773.873 4194.286) rotate(15.009)" fill="#f9b600"/>
+      <rect class="group1-rect6" id="Rectangle_7754-2" data-name="Rectangle 7754" width="12" height="12" transform="translate(-1759.383 4198.171) rotate(15.009)" fill="#f9b600"/>
+    </g>
+    
+  </g>
+</svg>

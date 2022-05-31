@@ -1,0 +1,1955 @@
+paths:
+  /app/users/register:
+     post:
+      tags:
+        - User
+      summary:
+        - User Register
+      description:
+        - This API Register user.
+      consumes:
+        - application/json
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              firstName: 
+                type: string
+                description: User First name
+                required: true,
+                example : Ravi
+              lastName:
+                type: string
+                description: User last name
+                required: true,
+                example : Jangid
+              email:
+                type: string
+                description: User email
+                required: true,
+                example : ravi@yopmail.com  
+              username:
+                type: string
+                description: username
+                required: true,
+                example : Ravijangid
+              mob_no:
+                type: string
+                description: User phone number
+                required: true,
+                example : 9090909090
+              T_C:
+                type: number
+                description: Term & condition and policy
+                required: true,
+                example : 1
+      responses:
+        200:
+          description: OK
+  
+  /app/users/login:
+     post:
+      tags:
+        - User
+      summary:
+        - User login
+      description:
+        - This API login user.
+      consumes:
+        - application/json
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              username: 
+                type: string
+                description: username
+                required: true,
+                example : Ravi
+              mob_no:
+                type: string
+                description: mobile number user
+                required: true,
+                example : 9009205626
+              plus18:
+                type: boolean
+                description: 18 Plus user allowed 
+                required: true,
+                example : 1
+      responses:
+        200:
+          description: OK
+
+  /app/users/social-login:
+     post:
+      tags:
+        - User
+      summary:
+        - Social login
+      description:
+        - This API Social login user.
+      consumes:
+        - application/json
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              firstName: 
+                type: string
+                description: firstName
+                required: true,
+                example : vikash
+              lastName:
+                type: string
+                description: lastName
+                required: true,
+                example : saini
+              email:
+                type: string
+                description: email 
+                required: true,
+                example : vikassaini@yopmail.com
+              profile_image:
+                type: string
+                description: profile url 
+                required: true,
+                example : https://image.shutterstock.com/image-photo/test-word-made-colored-wooden-260nw-573036694.jpg
+              google_id:
+                type: string
+                description: Gmail id 
+                required: true and false,
+                example : vikashsaini@gmail.com
+              fb_id:
+                type: string
+                description: facebook id 
+                required: true and false,
+                example : vikashsaini@facebook.com
+      responses:
+        200:
+          description: OK
+
+  /app/users/complete-profile:
+     post:
+      tags:
+        - User
+      summary:
+        - User Complete profile
+      description:
+        - This API Complete profile.
+      consumes:
+        - application/json
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              id: 
+                type: number
+                description: Id
+                required: true,
+                example : 1
+              mob_no:
+                type: string
+                description: mobile number user
+                required: true,
+                example : "1234567890"
+              username:
+                type: string
+                description: username
+                required: true,
+                example : Housie
+      responses:
+        200:
+          description: OK
+
+  /app/users/verify:
+     post:
+      tags:
+        - User
+      summary:
+        - User verify
+      description:
+        - This API verify user.
+      consumes:
+        - application/json
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              mob_no:
+                type: string
+                description: mobile number user
+                required: true,
+                example : 9009205626
+              otp:
+                type: string
+                description: otp
+                required: true,
+                example : 123456
+              isSignup:
+                type: boolean
+                description: true and false 
+                required: true,
+                example : true
+      responses:
+        200:
+          description: OK
+
+  /app/users/resend-otp:
+    post:
+      tags:
+        - User
+      summary:
+        - User Resend otp
+      description:
+        - This API Resend otp.
+      consumes:
+        - application/json
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              mob_no:
+                type: string
+                description: mobile number user
+                required: true,
+                example : 1234567890
+      responses:
+        200:
+          description: OK
+
+  /app/users/show-profile:
+     get:
+      tags:
+        - User
+      summary:
+        - show profile
+      description:
+        - This show profile user.
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:
+              
+      responses:
+        200:
+          description: OK
+
+  /app/users/profile-edit:
+     post:
+      tags:
+        - User
+      summary:
+        - profile edit
+      description:
+        - This  profile edit user.
+      consumes:
+        - multipart/form-data
+      security:
+         - Bearer: []
+      parameters:
+        - in: formData
+          name: firstName
+          type: string
+          description: Description of file contents.
+        - in: formData
+          name: lastName
+          type: string
+          description: Description of file contents.
+        - in: formData
+          name: email
+          type: string
+          description: Description of file contents.
+        - in: formData
+          name: username
+          type: string
+          description: Description of file contents.
+        - in: formData
+          name: dob
+          type: string
+          description: Date of birth
+        - in: formData
+          name: mob_no
+          type: string
+          description: Description of file contents.
+        - in: formData
+          name: state_id
+          type: number
+          description: Description of file contents.
+        - in: formData
+          name: profile_image
+          type: file
+          description: The file to upload.
+      responses:
+        200:
+          description: OK
+
+  /app/users/logout:
+     post:
+      tags:
+        - User
+      summary:
+        - Log out
+      description:
+        - This Log out 
+      consumes:
+        - application/json
+      security:
+        - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:
+              
+      responses:
+        200:
+          description: OK
+      
+  /app/users/list-category:
+     get:
+      tags:
+        - User
+      summary:
+        - list categroy
+      description:
+        - This list categroy user.
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:
+              
+      responses:
+        200:
+          description: OK
+
+  /app/users/state:
+     get:
+      tags:
+        - User
+      summary:
+        - list state
+      description:
+        - This is list state.
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:
+              
+      responses:
+        200:
+          description: OK
+
+  /app/users/contest-list/{categroy_id}:
+     get:
+      tags:
+        - User
+      summary:
+        - contests list
+      description:
+        - This contests list user.
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: categroy_id
+          in: path
+          type: integer
+          required: true
+      responses:
+        200:
+          description: OK
+
+  /app/users/contest-detail/{id}:
+     get:
+      tags:
+        - User
+      summary:
+        - contests Detail
+      description:
+        - This contests Detail.
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: id
+          in: path
+          type: integer
+          required: true
+      responses:
+        200:
+          description: OK
+          
+  /app/users/ticket-buy:
+     post:
+      tags:
+        - User
+      summary:
+        - User Ticket Buy
+      description:
+        - This API User Ticket Buy.
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              user_id:
+                type: number
+                description: user id
+                required: true,
+                example : 2
+              contest_id:
+                type: number
+                description: Contest Id
+                required: true
+                example : 2
+              total_amount:
+                type: number
+                description: Total Amount
+                required: true
+                example : 10
+              ticket_details:
+                type: object
+                description: Ticket Details
+                required: true,
+                example : [
+                   {
+                      "id": "490f738b-cc9b-435b-9de7-001879b60dff",
+                      "index": 0,
+                      "selected": false,
+                      "numbers": [
+                                    [
+                                      {
+                                          "x": 0,
+                                          "y": 0,
+                                          "clickable": false,
+                                          "isMissed": false,
+                                          "isRevealed": false,
+                                          "value": 0,
+                                          "isEmpty": true
+                                      },
+                                      {
+                                          "x": 0,
+                                          "y": 1,
+                                          "clickable": false,
+                                          "isMissed": false,
+                                          "value": 15,
+                                          "isRevealed": false,
+                                          "isEmpty": false
+                                      },
+                                      {
+                                          "x": 0,
+                                          "y": 2,
+                                          "clickable": false,
+                                          "isMissed": false,
+                                          "value": 22,
+                                          "isRevealed": false,
+                                          "isEmpty": false
+                                      },
+                                      {
+                                          "x": 0,
+                                          "y": 3,
+                                          "clickable": false,
+                                          "isMissed": false,
+                                          "isRevealed": false,
+                                          "value": 0,
+                                          "isEmpty": true
+                                      },
+                                      {
+                                          "x": 0,
+                                          "y": 4,
+                                          "clickable": false,
+                                          "isMissed": false,
+                                          "value": 41,
+                                          "isRevealed": false,
+                                          "isEmpty": false
+                                      },
+                                      {
+                                          "x": 0,
+                                          "y": 5,
+                                          "clickable": false,
+                                          "isMissed": false,
+                                          "value": 54,
+                                          "isRevealed": false,
+                                          "isEmpty": false
+                                      },
+                                      {
+                                          "x": 0,
+                                          "y": 6,
+                                          "clickable": false,
+                                          "isMissed": false,
+                                          "isRevealed": false,
+                                          "value": 0,
+                                          "isEmpty": true
+                                      },
+                                      {
+                                          "x": 0,
+                                          "y": 7,
+                                          "clickable": false,
+                                          "isMissed": false,
+                                          "value": 75,
+                                          "isRevealed": false,
+                                          "isEmpty": false
+                                      },
+                                      {
+                                          "x": 0,
+                                          "y": 8,
+                                          "clickable": false,
+                                          "isMissed": false,
+                                          "isRevealed": false,
+                                          "value": 0,
+                                          "isEmpty": true
+                                      }
+                                    ],
+                                    [
+                                      {
+                                          "x": 1,
+                                          "y": 0,
+                                          "clickable": false,
+                                          "isMissed": false,
+                                          "isRevealed": false,
+                                          "value": 0,
+                                          "isEmpty": true
+                                      },
+                                      {
+                                          "x": 1,
+                                          "y": 1,
+                                          "clickable": false,
+                                          "isMissed": false,
+                                          "value": 16,
+                                          "isRevealed": false,
+                                          "isEmpty": false
+                                      },
+                                      {
+                                          "x": 1,
+                                          "y": 2,
+                                          "clickable": false,
+                                          "isMissed": false,
+                                          "value": 28,
+                                          "isRevealed": false,
+                                          "isEmpty": false
+                                      },
+                                      {
+                                          "x": 1,
+                                          "y": 3,
+                                          "clickable": false,
+                                          "isMissed": false,
+                                          "isRevealed": false,
+                                          "value": 0,
+                                          "isEmpty": true
+                                      },
+                                      {
+                                          "x": 1,
+                                          "y": 4,
+                                          "clickable": false,
+                                          "isMissed": false,
+                                          "value": 42,
+                                          "isRevealed": false,
+                                          "isEmpty": false
+                                      },
+                                      {
+                                          "x": 1,
+                                          "y": 5,
+                                          "clickable": false,
+                                          "isMissed": false,
+                                          "value": 59,
+                                          "isRevealed": false,
+                                          "isEmpty": false
+                                      },
+                                      {
+                                          "x": 1,
+                                          "y": 6,
+                                          "clickable": false,
+                                          "isMissed": false,
+                                          "isRevealed": false,
+                                          "value": 0,
+                                          "isEmpty": true
+                                      },
+                                      {
+                                          "x": 1,
+                                          "y": 7,
+                                          "clickable": false,
+                                          "isMissed": false,
+                                          "isRevealed": false,
+                                          "value": 0,
+                                          "isEmpty": true
+                                      },
+                                      {
+                                          "x": 1,
+                                          "y": 8,
+                                          "clickable": false,
+                                          "isMissed": false,
+                                          "value": 86,
+                                          "isRevealed": false,
+                                          "isEmpty": false
+                                      }
+                                    ],
+                                    [
+                                      {
+                                          "x": 2,
+                                          "y": 0,
+                                          "clickable": false,
+                                          "isMissed": false,
+                                          "value": 7,
+                                          "isRevealed": false,
+                                          "isEmpty": false
+                                      },
+                                      {
+                                          "x": 2,
+                                          "y": 1,
+                                          "clickable": false,
+                                          "isMissed": false,
+                                          "value": 13,
+                                          "isRevealed": false,
+                                          "isEmpty": false
+                                      },
+                                      {
+                                          "x": 2,
+                                          "y": 2,
+                                          "clickable": false,
+                                          "isMissed": false,
+                                          "value": 20,
+                                          "isRevealed": false,
+                                          "isEmpty": false
+                                      },
+                                      {
+                                          "x": 2,
+                                          "y": 3,
+                                          "clickable": false,
+                                          "isMissed": false,
+                                          "isRevealed": false,
+                                          "value": 0,
+                                          "isEmpty": true
+                                      },
+                                      {
+                                          "x": 2,
+                                          "y": 4,
+                                          "clickable": false,
+                                          "isMissed": false,
+                                          "isRevealed": false,
+                                          "value": 0,
+                                          "isEmpty": true
+                                      },
+                                      {
+                                          "x": 2,
+                                          "y": 5,
+                                          "clickable": false,
+                                          "isMissed": false,
+                                          "isRevealed": false,
+                                          "value": 0,
+                                          "isEmpty": true
+                                      },
+                                      {
+                                          "x": 2,
+                                          "y": 6,
+                                          "clickable": false,
+                                          "isMissed": false,
+                                          "isRevealed": false,
+                                          "value": 0,
+                                          "isEmpty": true
+                                      },
+                                      {
+                                          "x": 2,
+                                          "y": 7,
+                                          "clickable": false,
+                                          "isMissed": false,
+                                          "value": 76,
+                                          "isRevealed": false,
+                                          "isEmpty": false
+                                      },
+                                      {
+                                          "x": 2,
+                                          "y": 8,
+                                          "clickable": false,
+                                          "isMissed": false,
+                                          "value": 89,
+                                          "isRevealed": false,
+                                          "isEmpty": false
+                                      }
+                                    ]
+                      ]
+                    },
+                ]
+      responses:
+        200:
+          description: OK
+
+  /app/users/ticket-buy-details:
+     post:
+      tags:
+        - User
+      summary:
+        - User Ticket Buy Detail
+      description:
+        - This API Ticket Buy Detail.
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              contest_id:
+                type: number
+                description: contest_id
+                required: true,
+                example : 1
+              user_id:
+                type: number
+                description: user_id
+                required: true 
+                example : 2
+      responses:
+        200:
+          description: OK
+  
+  /app/users/my-match-list:
+    get:
+      tags:
+        - User
+      summary:
+        - My match list
+      description:
+        - This API My match list.
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:
+       
+      responses:
+        200:
+          description: OK
+
+  /app/users/list-category-room:
+     get:
+      tags:
+        - User
+      summary:
+        - List Category and Room
+      description:
+        - This is List Category and Room.
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:
+              
+      responses:
+        200:
+          description: OK
+
+  /app/users/create-privatecontest:
+     post:
+      tags:
+        - User
+      summary:
+        - Private Game Create
+      description:
+        - This API Private Game Create.
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              user_id:
+                type: number
+                description: user id
+                required: true,
+                example : 2
+              category_id:
+                type: number
+                description: Category id
+                required: true 
+                example : 1
+              entry_fee:
+                type: string
+                description: Contest Prize 
+                required: true
+                example : 10
+              contest_name:
+                type: string
+                description: Room Name 
+                required: true 
+                example : Housie
+      responses:
+        200:
+          description: OK
+
+  /app/users/privatecontest-detail/{id}:
+     get:
+      tags:
+        - User
+      summary:
+        - Private Contest Detail
+      description:
+        - This Private contests Detail.
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: id
+          in: path
+          type: integer
+          required: true
+      responses:
+        200:
+          description: OK
+
+  /app/users/join-game:
+     post:
+      tags:
+        - User
+      summary:
+        - User Game Join
+      description:
+        - This API User Game Join.
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              invite_code:
+                type: string
+                description: Invite code
+                required: true,
+                example : QXOo1dizAKRMeq4tQ
+              user_id:
+                type: string
+                description: user_id 
+                required: true,
+                example : 2
+      responses:
+        200:
+          description: OK
+
+  /app/users/start-game:
+     post:
+      tags:
+        - User
+      summary:
+        - User Start Game
+      description:
+        - This API User Game Start.
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              contest_id:
+                type: number
+                description: Contest id
+                required: true,
+                example : 41
+              random_id:
+                type: string
+                description: Random id
+                required: true,
+                example : 638b8f42-6280-49a8-baf5-77ea7146be57
+      responses:
+        200:
+          description: OK
+
+  /app/users/user-setting:
+     post:
+      tags:
+        - User
+      summary:
+        - User Setting
+      description:
+        - This API User Setting.
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              user_id:
+                type: number
+                description: user id
+                required: true,
+                example : 2
+              color:
+                type: string
+                description: color
+                required: true and false
+                example : red
+              gameboardsound:
+                type: boolean
+                description: Game Board sound 
+                required: true and false
+                example : true
+              overallgamesound:
+                type: boolean
+                description: Game Backgroud sound 
+                required: true and false
+                example : true
+              language:
+                type: string
+                description: Language
+                required: true and false
+                example : hindi
+      responses:
+        200:
+          description: OK
+
+  /app/users/helpdesk:
+     post:
+      tags:
+        - User
+      summary:
+        - User Help&Support
+      description:
+        - This API User Support.
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              user_id:
+                type: number
+                description: user id
+                required: true,
+                example : 2
+              message:
+                type: string
+                description: message
+                required: true 
+                example : test
+      responses:
+        200:
+          description: OK
+
+  /app/users/cmspage-view/{id}:
+     post:
+      tags:
+        - User
+      summary:
+        - Cms Page View
+      description:
+        - This Cms Page View.
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: id
+          in: path
+          type: integer
+          required: true
+      responses:
+        200:
+          description: OK
+
+  /app/users/add-kyc-detail:
+     post:
+      tags:
+        - User
+      summary:
+        - KYC Detail add
+      description:
+        - This is user kyc detail add.
+      consumes:
+        - multipart/form-data
+      security:
+         - Bearer: []
+      parameters:
+        - in: formData
+          name: user_id
+          type: number
+          description: Description of file contents.
+        - in: formData
+          name: pan_card_no
+          type: string
+          description: Description of file contents.
+        - in: formData
+          name: pan_card_name
+          type: string
+          description: Description of file contents.
+        - in: formData
+          name: dob
+          type: string
+          required: true
+          description: Description of file contents.
+        - in: formData
+          name: state
+          type: string
+          description: Date of birth
+        - in: formData
+          name: aadhar_card_name
+          type: string
+          description: Description of file contents.
+        - in: formData
+          name: aadhar_card_no
+          type: string
+          description: Description of file contents.
+        - in: formData
+          name: doc_image
+          type: file
+          description: The file to upload.
+      responses:
+        200:
+          description: OK
+
+  /app/users/kyc-verify-status:
+     get:
+      tags:
+        - User
+      summary:
+        - Kyc verify status
+      description:
+        - This kyc status .
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:
+      responses:
+        200:
+          description: OK
+
+  /app/users/add-bankdetail:
+     post:
+      tags:
+        - User
+      summary:
+        - User Bank detail Add
+      description:
+        - This API Bank Detail Add.
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              user_id:
+                type: number
+                description: user id
+                required: true,
+                example : 2
+              account_holder_name:
+                type: string
+                description: Holder Name
+                required: true 
+                example : Housie
+              bank_name:
+                type: string
+                description: Bank Name
+                required: true 
+                example : BOB
+              account_number:
+                type: string
+                description: Account Number
+                required: true 
+                example : 1234567890
+              re_account_number:
+                type: string
+                description: Re-Account Number
+                required: true 
+                example : 1234567890
+              ifsc_code:
+                type: string
+                description: ifsc code
+                required: true 
+                example : ifsc
+      responses:
+        200:
+          description: OK
+
+  /app/users/user-notification:
+    post:
+      tags:
+        - User
+      summary:
+        -User All Notification
+      description:
+        - This API User Notification list.
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              user_id:
+                type: number
+                description: user id
+                required: true,
+                example : 2
+       
+      responses:
+        200:
+          description: OK
+# Admin swagger
+  /app/admin/login:
+      post:
+        tags:
+          - Admin
+        summary:
+          - Admin login
+        description:
+          - This Admin login.
+        consumes:
+          - application/json
+        parameters:
+          - name: body
+            in: body
+            schema:
+              properties:
+                email: 
+                  type: string
+                  description: email
+                  required: true,
+                  example : housie@yopmail.com
+                password:
+                  type: string
+                  description: password
+                  required: true,
+                  example : 12345678
+        responses:
+          200:
+            description: OK
+  
+  /app/admin/dashboard:
+     get:
+      tags:
+        - Admin
+      summary:
+        - Dashboard
+      description:
+        - This is Dashboard.
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:
+              
+      responses:
+        200:
+          description: OK
+
+  /app/admin/forgot-password:
+    post:
+      tags:
+        - Admin
+      summary:
+        - forgot-password
+      description:
+        - This forgot-password Admin.
+      consumes:
+        - application/json
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              email: 
+                type: string
+                description: Email
+                required: true,
+                example : "housie@yopmail.com"
+      responses:
+        200:
+          description: OK
+
+  /app/admin/update-password:
+    post:
+      tags:
+        - Admin
+      summary:
+        - Update-password
+      description:
+        - This update-password Admin.
+      consumes:
+        - application/json
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              password: 
+                type: string
+                description: password
+                required: true,
+                example : "12345678"
+              confirm_password: 
+                type: string
+                description: Confirm Password
+                required: true,
+                example : "12345678"
+              token: 
+                type: string
+                description: token
+                required: true,
+                example : ""
+      responses:
+        200:
+          description: OK
+
+  /app/admin/change-password:
+    post:
+      tags:
+        - Admin
+      summary:
+        - Change-Password
+      description:
+        - This Change-Password Admin.
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              current_password: 
+                type: string
+                description: current password
+                required: true,
+                example : "123456789"
+              password: 
+                type: string
+                description: Password
+                required: true,
+                example : "123456789"
+      responses:
+        200:
+          description: OK
+
+  /app/admin/adminprofile-show:
+     get:
+      tags:
+        - Admin
+      summary:
+        - Admin Profile Show
+      description:
+        - This is Admin profile show.
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:
+              
+      responses:
+        200:
+          description: OK
+
+  /app/admin/adminprofile-update:
+     post:
+      tags:
+        - Admin
+      summary:
+        - Admin Profile Update
+      description:
+        - This Admin profile Update.
+      consumes:
+        - multipart/form-data
+      security:
+         - Bearer: []
+      parameters:
+        - in: formData
+          name: firstName
+          type: string
+          description: Description of file contents.
+        - in: formData
+          name: lastName
+          type: string
+          description: Description of file contents.
+        - in: formData
+          name: dob
+          type: string
+          description: Date of birth
+        - in: formData
+          name: mob_no
+          type: string
+          description: Description of file contents.
+        - in: formData
+          name: id
+          type: number
+          description: Description of file contents.
+        - in: formData
+          name: profile_image
+          type: file
+          description: The file to upload.
+      responses:
+        200:
+          description: OK
+  
+  /app/admin/state:
+     get:
+      tags:
+        - Admin
+      summary:
+        - list state
+      description:
+        - This is list state.
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:
+              
+      responses:
+        200:
+          description: OK
+  
+  /app/admin/list-user:
+    get:
+      tags:
+        - Admin
+      summary:
+        - User list
+      description:
+        - This User list user.
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:   
+      responses:
+        200:
+          description: OK
+
+  /app/admin/user-id/{id}:
+    get:
+      tags:
+        - Admin
+      summary:
+        - user show
+      description:
+        - This profile update user.
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: id
+          in: path
+          type: integer
+          required: true,
+      responses:
+        200:
+          description: OK
+
+  /app/admin/user-update:
+    put:
+      tags:
+        - Admin
+      summary:
+        - profile update
+      description:
+        - This profile update user.
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              id: 
+                type: number
+                description: user_id
+                required: true,
+                example : 1
+              firstName: 
+                type: string
+                description: firstName 
+                required: true,
+                example : ravi
+              lastName: 
+                type: string
+                description: lastName 
+                required: true,
+                example : kumar
+              dob: 
+                type: string
+                description: date of birth 
+                required: true,
+                example : 10/15/2021
+              state_id: 
+                type: number
+                description: state_id 
+                required: true,
+                example : 1
+      responses:
+        200:
+          description: OK
+
+  /app/admin/block-user:
+    post:
+      tags:
+        - Admin
+      summary:
+        - user block and unblock.
+      description:
+        - This profile update user.
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              id: 
+                type: number
+                description: user_id
+                required: true,
+                example : 1
+              status: 
+                type: number
+                description: status 0 and 1 
+                required: true,
+                example : 0
+      responses:
+        200:
+          description: OK
+
+  /app/admin/category-list:
+    get:
+      tags:
+        - Admin
+      summary:
+        - Categroy list
+      description:
+        - This Categroy list user.
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:   
+      responses:
+        200:
+          description: OK
+
+  /app/admin/category-view/{id}:
+    post:
+      tags:
+        - Admin
+      summary:
+        - Categroy view
+      description:
+        - This Categroy view.
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: id
+          in: path
+          type: integer
+          required: true,   
+      responses:
+        200:
+          description: OK
+
+  /app/admin/category-update:
+    put:
+      tags:
+        - Admin
+      summary:
+        - Categroy update
+      description:
+        - This Categroy update.
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              id: 
+                type: number
+                description: categroy id
+                required: true,
+                example : 1
+              category_name: 
+                type: string
+                description: categroy name
+                required: true,
+                example : test
+              title_name: 
+                type: string
+                description: title name
+                required: true,
+                example : test    
+      responses:
+        200:
+          description: OK
+
+  /app/admin/cms-list:
+    get:
+      tags:
+        - Admin
+      summary:
+        - CMS list
+      description:
+        - This CMS list.
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:   
+      responses:
+        200:
+          description: OK
+
+  /app/admin/cms-view/{id}:
+    post:
+      tags:
+        - Admin
+      summary:
+        - CMS View
+      description:
+        - This CMS View
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: id
+          in: path
+          type: integer
+          required: true,   
+      responses:
+        200:
+          description: OK
+
+  /app/admin/cms-viewedit:
+    put:
+      tags:
+        - Admin
+      summary:
+        - CMS update
+      description:
+        - This CMS update
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              id: 
+                type: number
+                description: cms id
+                required: true,
+                example : 1
+              name: 
+                type: string
+                description: cms title name
+                required: true,
+                example : faq
+              text: 
+                type: text
+                description: cms discription
+                required: true,
+                example : discription    
+      responses:
+        200:
+          description: OK
+ 
+  /app/admin/create-subadmin:
+    post:
+      tags:
+        - Admin
+      summary:
+        - Subadmin create
+      description:
+        - This Subadmin create
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              firstName: 
+                type: string
+                description: firstname
+                required: true,
+                example : test
+              lastName: 
+                type: string
+                description: lastname
+                required: true,
+                example : lastname
+              email: 
+                type: string
+                description: email
+                required: true,
+                example : email
+              password: 
+                type: string
+                description: password
+                required: true,
+                example : 123456  
+              username: 
+                type: string
+                description: username
+                required: true,
+                example : test  
+              access_modules: 
+                type: object
+                description: acccess modules
+                required: true,
+                example : {
+                  "user":"user managment"
+                } 
+      responses:
+        200:
+          description: OK
+  
+  /app/admin/subadmin-list:
+    get:
+      tags:
+        - Admin
+      summary:
+        - Subadmin list
+      description:
+        - This Subadmin list.
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:   
+      responses:
+        200:
+          description: OK
+
+  /app/admin/subadmin-view/{id}:
+     post:
+      tags:
+        - Admin
+      summary:
+        - Subadmin View
+      description:
+        - This Subadmin View
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: id
+          in: path
+          type: integer
+          required: true,   
+      responses:
+        200:
+          description: OK
+    
+  /app/admin/subadmin-update:
+     put:
+      tags:
+        - Admin
+      summary:
+        - Subadmin update
+      description:
+        - This Subadmin update
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              id: 
+                type: number
+                description: subadmin id
+                required: true,
+                example : 1
+              firstName: 
+                type: string
+                description: firstname
+                required: true,
+                example : test
+              lastName: 
+                type: string
+                description: lastname
+                required: true,
+                example : lastname   
+              access_modules: 
+                type: object
+                description: acccess modules
+                required: true,
+                example : {
+                  "user":"user managment"
+                } 
+      responses:
+        200:
+          description: OK
+
+  /app/admin/subadmin-delete/{id}:
+     delete:
+      tags:
+        - Admin
+      summary:
+        - Subadmin Delete
+      description:
+        - This Subadmin Delete
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: id
+          in: path
+          type: integer
+          required: true,   
+      responses:
+        200:
+          description: OK
+
+  /app/admin/create-notification:
+    post:
+      tags:
+        - Admin
+      summary:
+        - Notification Create
+      description:
+        - This Notification Create Admin.
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              title: 
+                type: string
+                description: Notification Title
+                required: true,
+                example : "Message"
+              notification: 
+                type: string
+                description: Notification Description
+                required: true,
+                example : "New version Update"
+      responses:
+        200:
+          description: OK
+
+  /app/admin/notification:
+     get:
+      tags:
+        - Admin
+      summary:
+        - Notification List
+      description:
+        - This is Notifiation.
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:
+              
+      responses:
+        200:
+          description: OK
+
+  /app/admin/kyc-list:
+     get:
+      tags:
+        - Admin
+      summary:
+        - User kyc list
+      description:
+        - This is User kyc list.
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:
+              
+      responses:
+        200:
+          description: OK
+
+  /app/admin/kyc-userview/{user_id}:
+    get:
+      tags:
+        - Admin
+      summary:
+        - user kyc
+      description:
+        - This user kyc view.
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: user_id
+          in: path
+          type: integer
+          required: true,
+      responses:
+        200:
+          description: OK
+
+  /app/admin/kyc-verify:
+    post:
+      tags:
+        - Admin
+      summary:
+        - kyc verify
+      description:
+        - This kyc verify by Admin.
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              user_id: 
+                type: number
+                description: user id
+                required: true,
+                example : 2
+              is_verified: 
+                type: number
+                description: kyc verify status
+                required: true,
+                example : true
+              notification: 
+                type: string
+                description: status notification
+                required: false,
+                example : "please upload clear image"
+      responses:
+        200:
+          description: OK
+
+  /app/admin/category-graph:
+    post:
+      tags:
+        - Admin
+      summary:
+        - Category Graph
+      description:
+        - This Category Graph api.
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              category_id: 
+                type: number
+                description: Category id
+                required: true,
+                example : 1
+              duration: 
+                type: number
+                description: Date
+                required: true,
+                example : 0=week,1=month,2=year
+      responses:
+        200:
+          description: OK
+
+
