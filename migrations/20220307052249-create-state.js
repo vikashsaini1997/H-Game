@@ -11,6 +11,11 @@ module.exports = {
       state_name: {
         type: Sequelize.STRING
       },
+      status: {
+        type: Sequelize.INTEGER,
+        defaultValue:0,
+        Comment: "1 <=allow, 0 <=disallow "
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE

@@ -35,6 +35,7 @@ module.exports = (sequelize, DataTypes) => {
     google_id: DataTypes.STRING,
     status:DataTypes.STRING,
     token:DataTypes.STRING,
+    auth_token:DataTypes.STRING,
     T_C:DataTypes.INTEGER,
     device_token:DataTypes.TEXT,
     last_login:DataTypes.STRING,
@@ -45,7 +46,10 @@ module.exports = (sequelize, DataTypes) => {
     current_balance:DataTypes.STRING,
     is_verify: DataTypes.BOOLEAN,
     fb_id:DataTypes.STRING,
-    google_id:DataTypes.STRING
+    google_id:DataTypes.STRING,
+    contactId:DataTypes.STRING,
+    fundaccountid:DataTypes.STRING,
+    current_location:DataTypes.STRING
   }, {
     sequelize,
     modelName: 'User',

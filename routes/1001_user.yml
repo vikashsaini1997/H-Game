@@ -78,6 +78,11 @@ paths:
                 description: 18 Plus user allowed 
                 required: true,
                 example : 1
+              current_location:
+                type: string
+                description: Rajasthan  
+                required: true,
+                example : Rajasthan
       responses:
         200:
           description: OK
@@ -127,6 +132,11 @@ paths:
                 description: facebook id 
                 required: true and false,
                 example : vikashsaini@facebook.com
+              current_location:
+                type: string
+                description: Rajasthan  
+                required: true,
+                example : Rajasthan
       responses:
         200:
           description: OK
@@ -1112,6 +1122,32 @@ paths:
         200:
           description: OK
 
+  /app/users/payment-withdrawal:
+    post:
+      tags:
+        - User
+      summary:
+        - User payment withdrawal
+      description:
+        - This payment withdrawal.
+      consumes:
+        - application/json
+      security:
+        - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              amount:
+                type: number
+                description: amount
+                required: true,
+                example : 2
+                responses:
+      200:
+        description: OK
+
   /app/users/user-notification:
     post:
       tags:
@@ -1134,6 +1170,48 @@ paths:
                 description: user id
                 required: true,
                 example : 2
+       
+      responses:
+        200:
+          description: OK
+
+  /app/users/transaction-history:
+    get:
+      tags:
+        - User
+      summary:
+        - Transaction history
+      description:
+        - This API Transaction history.
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:
+       
+      responses:
+        200:
+          description: OK
+  
+  /app/users/wallet-balance:
+    get:
+      tags:
+        - User
+      summary:
+        - wallet-balance
+      description:
+        - This API wallet-balance
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:
        
       responses:
         200:
@@ -1948,6 +2026,89 @@ paths:
                 description: Date
                 required: true,
                 example : 0=week,1=month,2=year
+      responses:
+        200:
+          description: OK
+
+  /app/admin/user-withdrawal-list:
+    post:
+      tags:
+        - Admin
+      summary:
+        - withdrawal list
+      description:
+        - withdrawal list
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              page_no: 
+                type: number
+                description: page no
+                required: true,
+                example : 1
+      responses:
+        200:
+          description: OK
+
+  /app/admin/withdrawl-request-approve:
+    post:
+      tags:
+        - Admin
+      summary:
+        - withdrawal request approve 
+      description:
+        - withdrawal request approve
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              id: 
+                type: number
+                description: transactions id
+                required: true,
+                example : 1
+              approve: 
+                type: number
+                description: approve -> 1 , approve->0
+                required: true,
+                example : 1
+      responses:
+        200:
+          description: OK
+
+  /app/admin/all-transaction-list:
+    post:
+      tags:
+        - Admin
+      summary:
+        - All transaction list
+      description:
+        - All transaction list
+      consumes:
+        - application/json
+      security:
+         - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              page_no: 
+                type: number
+                description: page no
+                required: true,
+                example : 1
       responses:
         200:
           description: OK

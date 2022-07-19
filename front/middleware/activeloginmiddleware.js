@@ -7,20 +7,28 @@ const db = require('../../models');
 
 module.exports = async (req, res, next) => {
     var authHeader = req.headers.authorization;
+   
 
     const authorization = authHeader.split(' ')[1];
+   
     const decode =jwt.verify(authorization, config.secret);
+    
     var userId = decode.sub;
-
-
+    
     const user = await db.User.findOne({
         where: {
           id: userId,
         }
       });
-     
-    if(user.status == "0"){
-       return res.status(400).json({ status: false, status_code: 400,message:"This user is block by administrator"});
+
+    if(authorization != user.auth_token){
+        return res.status(400).json(
+            { status: false, 
+              status_code: 401,
+              message:"Your session has been expired."
+            }
+        );
     }
+     
     next();
 }

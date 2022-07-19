@@ -1,64 +1,59 @@
 'use strict';
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('contests', {
+    await queryInterface.createTable('transactions', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      category_id: {
-        allowNull: false,
+      user_id: {
         type: Sequelize.INTEGER
       },
-      random_id: {
+      txn_id: {
         type: Sequelize.STRING
       },
-      contest_type: {
-        type: Sequelize.INTEGER,
-        comment:"public =>0, private =>1", 
-      },
-      admin_comission: {
-        allowNull: false,
+      txn_date: {
         type: Sequelize.STRING
       },
-      winning_amount: {
-        allowNull: false,
+      txn_time: {
         type: Sequelize.STRING
       },
-      contest_size: {
-        allowNull: false,
+      txn_amount:{
         type: Sequelize.STRING
       },
-      entry_fee: {
-        allowNull: false,
-        type: Sequelize.INTEGER
+      message_type:{
+        type: Sequelize.STRING,
       },
-      waiting_time: {
-        allowNull: false,
-        type: Sequelize.STRING
-      },
-      end_time: {
+      gateway_name:{
         allowNull: true,
-        type: Sequelize.INTEGER
+        type: Sequelize.STRING
+      },
+      local_txn_id:{
+        allowNull: true,
+        type: Sequelize.STRING
+      },
+      added_type:{
+        comment:'1 => withdrawal , 2 => add money, 3 => Ticket Purchase, 4 => winner Amount',
+        type: Sequelize.STRING
       },
       status:{
-        allowNull: false,
-        comment:"Waiting =>0, Starting =>1, Started => 2 ,Completed=>3",
+        comment:'0=>pending,1=>success,2=>cancel',
         type: Sequelize.STRING
       },
-      game_rule_number: {
-        allowNull: true,
+      payout_status:{
+        defaultValue:false,
+        comment:'0=>processing,1=>success,2=>cancel',
         type: Sequelize.STRING
       },
-      announced_numbers:{
+      payout_response:{
         allowNull: true,
         type: Sequelize.TEXT
       },
       createdAt: {
         allowNull: false,
-        type: Sequelize.DATE    
+        type: Sequelize.DATE
       },
       updatedAt: {
         allowNull: false,
@@ -67,6 +62,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('contests');
+    await queryInterface.dropTable('transactions');
   }
 };

@@ -11,6 +11,18 @@ const categroy = require("../../models/category");
 const contests = require("../../models/contests");
 const user_setting = require("../../models/user_setting")
 const join_contest = require("../../models/join_contest_details");
+var jsSHA = require("jssha");
+const axios = require('axios')
+const { exec } = require('child_process');
+const request = require('request');
+const moment = require("moment")
+const Razorpay = require("razorpay");
+var razorpay = new Razorpay({
+    key_id: process.env.RAZORPAY_KEY_ID,
+    key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
+const crypto = require("crypto");
+const shortid = require("shortid");
 const { v4: uuidv4 } = require('uuid');
 const redis = require('redis');
 const client = redis.createClient();
@@ -20,6 +32,8 @@ const { date } = require("joi");
 const msg91 = new (require('msg91-v5'))("372052Apw7JNLDZ4c623873b4P1");
 var nodemailer = require('nodemailer');
 const { compareSync } = require("bcryptjs");
+const Helper = require("../../helper/Helper");
+const { constructOTPRequest } = require("msg91-v5/libs/sendOtp");
 
 
 let transporter = nodemailer.createTransport({
@@ -37,6 +51,7 @@ module.exports = {
     Login: async (req, res, next) => {
         try {
             const params = req.body;
+            console.log('testt', params)
 
             const user = await db.User.findOne({
                 where: {
@@ -52,7 +67,7 @@ module.exports = {
                 return res.status(400).json({ status: false, status_code: 400, message: message });
 
             } else if (params.plus18 == 0) {
-                let message = "18 plus must be required.";
+                let message = "18 Plus must be required.";
                 return res.status(400).json({ status: false, status_code: 400, message: message });
             }
 
@@ -65,8 +80,6 @@ module.exports = {
                 authkey: "372052Apw7JNLDZ4c623873b4P1",
                 otp: otp,
             }
-            console.log(Checkvalue);
-
 
             msg91.sendOTP(Checkvalue).then((success) => {
                 console.log("SUCCESS !!!", success)
@@ -77,13 +90,14 @@ module.exports = {
             await db.User.update({
                 user,
                 otp: otp,
+                current_location: params.current_location
             }, {
                 where: {
                     id: user.id
                 }
             });
 
-            let successMessage = "Please verify your otp."
+            let successMessage = "Please verify your OTP."
             return res.send(response({}, successMessage));
         } catch (error) {
             next(error);
@@ -150,6 +164,15 @@ module.exports = {
                     data = {
                         "is_mobile": mobilecheck, ...omitHash(users.get()), token
                     };
+
+                    await db.User.update({
+                        auth_token: token
+                    }, {
+                        where: {
+                            email: params.email,
+                        }
+                    })
+
                     return res.send(response(data, successMessage));
 
 
@@ -163,7 +186,7 @@ module.exports = {
                     user_id: userlogin.id,
                     notification_type: 2,
                     title: "Bonus amount",
-                    notification: "congratulation you have got 50 rupess bonus amount",
+                    notification: "Congratulation you have got 50 rupess bonus amount",
                     extra_data: null,
                     status: 0
                 });
@@ -185,9 +208,6 @@ module.exports = {
                     var Usersettings = null;
                 }
 
-                console.log("afasasdfasdf", usersetting);
-
-
                 let successMessage = "";
 
                 successMessage = "Please complete profile";
@@ -207,15 +227,16 @@ module.exports = {
 
         try {
             const params = req.body;
-            console.log(params)
 
             const user = await db.User.findOne({
                 where: {
-                    mob_no: params.mob_no
+                    mob_no: params.mob_no,
                 }
             })
+
             if (user) {
-                throw "mob_no already used"
+                let message = "Mobile Number already used";
+                return res.status(400).json({ status: false, status_code: 400, message: message });
             }
 
             const user1 = await db.User.findOne({
@@ -224,8 +245,10 @@ module.exports = {
                 }
             })
             if (user1) {
-                throw "username already used"
+                let message = "Username already used";
+                return res.status(400).json({ status: false, status_code: 400, message: message });
             }
+
 
             var otp = Math.floor(100000 + Math.random() * 900000);
             //OTP Trigger
@@ -242,19 +265,45 @@ module.exports = {
                 console.log("ERROR!!!", error)
             })
 
+
+            //Contact Create Razorpay//
+
+            const Username = await db.User.findOne({
+                where: {
+                    id: params.id
+                }
+            })
+
+            var contactDetails = await axios.post(process.env.RAZORPAY_URL + '/contacts', { "name": Username.firstName, "email": Username.email }, {
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                auth: {
+                    username: process.env.RAZORPAY_KEY_ID,
+                    password: process.env.RAZORPAY_KEY_SECRET
+                }
+            })
+                .then(function (response) {
+                    return response.data;
+                })
+                .catch(function (error) {
+                    return error;
+                });
+
+            //Contact Create Razorpay End//
+
             await db.User.update({
                 mob_no: params.mob_no,
                 username: params.username,
                 otp: otp,
+                contactId: contactDetails.id
             }, {
                 where: {
                     id: params.id
                 }
             });
 
-            let data = '';
-
-            return res.send(response(data, "Please verify otp"));
+            return res.send(response({}, "Please verify OTP"));
         } catch (error) {
             next(error)
         }
@@ -272,63 +321,96 @@ module.exports = {
                 return res.status(400).json({ status: false, status_code: 400, message: message });
             }
 
-            if (
-                await db.User.findOne({
-                    where: {
-                        mob_no: params.mob_no,
-                    },
-                })
-            ) {
-                let message = "mobile number already registered";
-                return res.status(400).json({ status: false, status_code: 400, message: message });
-            }
-
-            if (
-                await db.User.findOne({
-                    where: {
-                        username: params.username,
-                    },
-                })
-            ) {
-                let message = "username already registered!";
-                return res.status(400).json({ status: false, status_code: 400, message: message });
-            }
-
-            if (
-                await db.User.findOne({
-                    where: {
-                        email: params.email,
-                    },
-                })
-            ) {
-                let message = "Email already registered!";
-                return res.status(400).json({ status: false, status_code: 400, message: message });
-            }
-
-            var otp = Math.floor(100000 + Math.random() * 900000);
-            params.otp = otp;
-
-            //OTP Trigger
-            const Checkvalue = {
-                template_id: "6241705da6cfa213936973d4",
-                mobile: 91 + params.mob_no,
-                authkey: "372052Apw7JNLDZ4c623873b4P1",
-                otp: otp,
-            }
-            console.log(Checkvalue);
-
-
-            msg91.sendOTP(Checkvalue).then((success) => {
-                console.log("SUCCESS !!!", success)
-            }).catch((error) => {
-                console.log("ERROR!!!", error)
+            const UserDetail = await db.User.findOne({
+                where: {
+                    mob_no: params.mob_no,
+                    is_verify: null
+                }
             })
+            if (UserDetail) {
+                var otp = Math.floor(100000 + Math.random() * 900000);
+                params.otp = otp;
 
-            console.log(params);
-            await db.User.create(params);
-            let successMessage = "Please verify your otp.";
-            return res.send(response({}, successMessage))
+                //OTP Trigger
+                const Checkvalue = {
+                    template_id: "6241705da6cfa213936973d4",
+                    mobile: 91 + params.mob_no,
+                    authkey: "372052Apw7JNLDZ4c623873b4P1",
+                    otp: otp,
+                }
 
+                msg91.sendOTP(Checkvalue).then((success) => {
+                    console.log("SUCCESS !!!", success)
+                }).catch((error) => {
+                    console.log("ERROR!!!", error)
+                })
+
+                await db.User.update(params, {
+                    where: {
+                        mob_no: params.mob_no
+                    }
+                });
+                let successMessage = "Please verify your OTP.";
+                return res.send(response({}, successMessage))
+
+            } else {
+
+                if (
+                    await db.User.findOne({
+                        where: {
+                            mob_no: params.mob_no,
+                        },
+                    })
+                ) {
+                    let message = "Mobile Number already registered";
+                    return res.status(400).json({ status: false, status_code: 400, message: message });
+                }
+
+                if (
+                    await db.User.findOne({
+                        where: {
+                            username: params.username,
+                        },
+                    })
+                ) {
+                    let message = "Username already registered!";
+                    return res.status(400).json({ status: false, status_code: 400, message: message });
+                }
+
+                if (
+                    await db.User.findOne({
+                        where: {
+                            email: params.email,
+                        },
+                    })
+                ) {
+                    let message = "Email already registered!";
+                    return res.status(400).json({ status: false, status_code: 400, message: message });
+                }
+
+
+                var otp = Math.floor(100000 + Math.random() * 900000);
+                params.otp = otp;
+
+                //OTP Trigger
+                const Checkvalue = {
+                    template_id: "6241705da6cfa213936973d4",
+                    mobile: 91 + params.mob_no,
+                    authkey: "372052Apw7JNLDZ4c623873b4P1",
+                    otp: otp,
+                }
+
+                msg91.sendOTP(Checkvalue).then((success) => {
+                    console.log("SUCCESS !!!", success)
+                }).catch((error) => {
+                    console.log("ERROR!!!", error)
+                })
+
+                console.log(params);
+                await db.User.create(params);
+                let successMessage = "Please verify your OTP.";
+                return res.send(response({}, successMessage))
+            }
         } catch (error) {
             next(error);
         }
@@ -345,15 +427,14 @@ module.exports = {
                     mob_no: params.mob_no,
                 }
             });
-            console.log(user)
 
             if (!user) {
-                let message = "Account doesn't exsist.";
+                let message = "Account doesn't exist.";
                 return res.status(400).json({ status: false, status_code: 400, message: message });
             }
 
             if (user.otp != params.otp) {
-                let message = "Invalid otp. Please try again.";
+                let message = "Invalid OTP. Please try again.";
                 return res.status(400).json({ status: false, status_code: 400, message: message });
             }
 
@@ -362,28 +443,17 @@ module.exports = {
                 params.bonus_amount = 50
                 // Object.assign(user, params);
                 // await user.save();
-                const update = await db.User.update({
-                    otp: 0,
-                    bonus_amount: 50,
-                    status: 1,
-                    is_verify: true,
-                }, {
-                    where: {
-                        mob_no: user.mob_no
-                    },
-                })
-
 
                 const usernotification = await db.notifications.create({
                     user_id: user.id,
                     notification_type: 2,
                     title: "Bonus amount",
-                    notification: "congratulation you have got 50 rupess bonus amount",
+                    notification: "Congratulation you have got 50 rupess bonus amount",
                     extra_data: null,
                     status: 0
                 });
 
-                 
+
                 const adminnotification = await db.notifications.create({
                     user_id: user.id,
                     notification_type: 1,
@@ -392,27 +462,57 @@ module.exports = {
                     extra_data: null,
                     status: 0
                 });
-                if(user.device_token){
-                var message = {
-                    "token": user.device_token,
-                    "notification": {
-                      "title": "New User Signup",
-                      "body": "New user signup in Housie game"
+                if (user.device_token) {
+                    var message = {
+                        "token": user.device_token,
+                        "notification": {
+                            "title": "New User Signup",
+                            "body": "New user signup in Housie game"
+                        }
                     }
-                  }
-                 firbase().send(message)
-                    .then((response) => {
-                      // Response is a message ID string.
-                      console.log('Successfully sent message:', response);
-                    })
-                    .catch((error) => {
-                      console.log('Error sending message:', error);
-                    });
+                    firbase().send(message)
+                        .then((response) => {
+                            // Response is a message ID string.
+                            console.log('Successfully sent message:', response);
+                        })
+                        .catch((error) => {
+                            console.log('Error sending message:', error);
+                        });
                 }
                 //notification count emit by socket//
 
-              
+                var contactDetails = await axios.post(process.env.RAZORPAY_URL + '/contacts', { "name": user.firstName, "email": user.email }, {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    auth: {
+                        username: process.env.RAZORPAY_KEY_ID,
+                        password: process.env.RAZORPAY_KEY_SECRET
+                    }
+                })
+                    .then(function (response) {
+                        return response.data;
+                    })
+                    .catch(function (error) {
+                        return error;
+                    });
+
+
+                const update = await db.User.update({
+                    otp: 0,
+                    bonus_amount: 50,
+                    status: 1,
+                    is_verify: true,
+                    contactId: contactDetails.id
+                }, {
+                    where: {
+                        mob_no: user.mob_no
+                    },
+                })
+
+
                 let successMessage = "Your account is verified. Please login now.";
+
                 return res.send(response({}, successMessage));
             } else {
                 params.last_login = "1";
@@ -456,6 +556,14 @@ module.exports = {
                     token,
                 };
 
+                await db.User.update({
+                    auth_token: data.token
+                }, {
+                    where: {
+                        id: user.id,
+                    }
+                })
+
                 return res.send(response(data, successMessage));
             }
         } catch (error) {
@@ -476,7 +584,7 @@ module.exports = {
             });
 
             if (!user) {
-                throw "Account doesn't exsist."
+                throw "Account doesn't exist."
             }
 
             var otp = Math.floor(100000 + Math.random() * 900000);
@@ -507,7 +615,7 @@ module.exports = {
                 }
             });
 
-            return res.send(response({}, "OTP has been resend successfully on your phone number."));
+            return res.send(response({}, "OTP has been resend successfully on your mobile number."));
         } catch (error) {
             next(error);
         }
@@ -540,7 +648,11 @@ module.exports = {
 
     state: async (req, res, next) => {
         try {
-            const data = await db.state.findAll();
+            const data = await db.state.findAll({
+                where: {
+                    status: 1
+                }
+            });
 
             return res.send(response(data));
         } catch (error) {
@@ -646,41 +758,33 @@ module.exports = {
             const data = await db.contests.findAll({
                 where: {
                     category_id: categroyId,
-                    status:'1'
+                    status: ['1', '0'],
+                    contest_type: '0',
                 },
                 include: [db.category],
+                order: [
+                    ['entry_fee', 'ASC'],
+                ]
             });
-
-            // data.forEach(function (item) {
-            //     var timer_counter = item.waiting_time;
-
-            //     var WinnerCountdown = setInterval(async function () {
-            //         await db.contests.update({
-            //             waiting_time: timer_counter
-            //         },
-            //             {
-            //                 where: {
-            //                     id: item.id,
-            //                 }
-            //             });
-            //         timer_counter--
-            //         if (timer_counter == "1") {
-            //             socket.emit('counters', "Congratulations You WON!!");
-            //             clearInterval(WinnerCountdown);
-            //         }
-            //     }, 1000);
-            //     // socket.emit('contest_list_emit', db_content_data);
-            // });
-
-            // const contest_table_update = await db.contests.findAll({
-            //     where: {
-            //         category_id: categroyId,
-            //     },
-            // });
-            // console.log("Teseter", contest_table_update)
-
-            console.log('Hlelotest', req.io.emit("contest_list_emit", data));
-            return res.send(response(data));
+            var Storedata = [];
+            data.forEach(function (item) {
+                var Timervalue = item.end_time - Math.floor(new Date().getTime() / 1000);
+                Storedata.push({
+                    'id': item.id,
+                    'category_id': item.category_id,
+                    'random_id': item.random_id,
+                    'contest_type': item.contest_type,
+                    'admin_comission': item.admin_comission,
+                    'winning_amount': item.winning_amount,
+                    'contest_size': item.contest_size,
+                    'entry_fee': item.entry_fee,
+                    'waiting_time': Timervalue,
+                    'status': item.status,
+                    'waiting': Timervalue,
+                    'end_time': item.end_time,
+                });
+            });
+            return res.send(response(Storedata));
         } catch (error) {
             next(error);
         }
@@ -695,8 +799,30 @@ module.exports = {
                     id: id,
                 }
             });
-            console.log('Testtt', data);
-            return res.send(response(data));
+
+            const fetchNumber = Helper.Game_rule_data(data.entry_fee);
+
+            await db.contests.update({
+                game_rule_number: fetchNumber
+            }, {
+                where: {
+                    id: id
+                }
+            })
+
+            let contest_data = {
+                waiting: data.end_time - Math.floor(new Date().getTime() / 1000),
+                category_id: data.category_id,
+                contest_size: data.contest_size,
+                entry_fee: data.entry_fee,
+                id: data.id,
+                random_id: data.random_id,
+                status: data.status,
+                waiting_time: data.waiting_time,
+                winning_amount: data.winning_amount
+            }
+
+            return res.send(response(contest_data));
         } catch (error) {
             next(error);
         }
@@ -710,7 +836,7 @@ module.exports = {
                     id: cmsId,
                 }
             });
-            return res.send(response(data, "cms list view"));
+            return res.send(response(data, "CMS list view"));
 
         } catch (error) {
             next(error)
@@ -737,7 +863,7 @@ module.exports = {
                 })
             }
             let data = {}
-            let successMessage = "updated successfully";
+            let successMessage = "Updated successfully";
             return res.send(response(data, successMessage))
 
         } catch (error) {
@@ -766,7 +892,7 @@ module.exports = {
 
             const data = await db.helpdesk.create(params, {
             })
-            let successMessage = "message submitted successfully";
+            let successMessage = "Message submitted successfully";
             return res.send(response(data, successMessage))
 
         } catch (error) {
@@ -778,7 +904,7 @@ module.exports = {
     ticket_buy: async (req, res, next) => {
         try {
 
-            var date = new Date();
+            // var date = new Date();
             const params = req.body;
 
             const Userbalancecheck = await db.User.findOne({
@@ -820,7 +946,6 @@ module.exports = {
                     return res.status(400).json({ status: false, status_code: 400, message: message });
                 }
             }
-
 
             await db.User.update(saveData, {
                 where: {
@@ -885,11 +1010,15 @@ module.exports = {
             const contest_list_data = await db.contests.findAll({
                 where: {
                     category_id: params.category_id,
+                    status: "1",
                 },
                 include: [db.category],
             });
 
-            req.io.emit("contest_list_emit", contest_list_data);
+            const contestListEmitKey = "contest_list_emit_" + params.category_id
+            req.io.emit(contestListEmitKey, contest_list_data);
+
+            console.log("contest_list_data", contest_list_data)
 
             const contest_buy_details = await db.contests.findAll({
                 where: {
@@ -897,9 +1026,35 @@ module.exports = {
                 }
             });
 
-            req.io.emit("game_buy_request", contest_buy_details);
+            const contestDetailUpdateKey = "game_buy_request_" + params.contest_id
+            req.io.emit(contestDetailUpdateKey, contest_buy_details);
 
-            return res.send(response(data, 'thank you for purchase ticket'));
+            //Ticket pruchased transction create // 
+
+            var dateUTC = new Date();
+            var dateUTC = dateUTC.getTime()
+            var dateIST = new Date(dateUTC);
+            //date shifting for IST timezone (+5 hours and 30 minutes)
+            dateIST.setHours(dateIST.getHours() + 5);
+            dateIST.setMinutes(dateIST.getMinutes() + 30);
+
+            var time = dateIST.toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true })
+            await db.transactions.create({
+                txn_amount: params.total_amount,
+                added_type: process.env.TICKET_BUY,
+                status: process.env.SUCCESS,
+                user_id: params.user_id,
+                message_type: "ticket purchased",
+                local_txn_id: 'TP' + new Date().valueOf() + params.user_id,
+                gateway_name: "Wallet",
+                txn_date: moment().format("DD MMM YYYY"),
+                txn_time: time,
+                payout_status: "",
+            })
+
+            //Ticket pruchased transction create end //
+
+            return res.send(response(data, 'Thank you for purchase ticket'));
 
         } catch (error) {
             next(error);
@@ -919,7 +1074,7 @@ module.exports = {
             })
 
             var categroyIdGet = await db.contests.findOne({
-                attributes: ['category_id', 'winning_amount', 'contest_size', 'waiting_time'],
+                attributes: ['category_id', 'winning_amount', 'contest_size', 'waiting_time', 'end_time', 'game_rule_number'],
                 where: {
                     id: params.contest_id,
                 }
@@ -949,13 +1104,14 @@ module.exports = {
             });
 
             const contest_buy_details = await db.contests.findAll({
-                attributes: ['winning_amount', 'contest_size', 'waiting_time'],
+                attributes: ['winning_amount', 'contest_size', 'waiting_time', 'game_rule_number'],
                 where: {
                     id: params.contest_id,
                 }
             });
 
-            req.io.emit("game_buy_details", contest_buy_details);
+            const gameBoardDetailKey = "game_buy_details_" + params.contest_id
+            req.io.emit(gameBoardDetailKey, contest_buy_details);
 
             // Time update join contest//
             var vauess = await db.join_contest_details.update({
@@ -965,90 +1121,23 @@ module.exports = {
                     contest_id: params.contest_id,
                 }
             })
-
-            console.log('thisss', vauess);
             //Time update join contest end//
 
-            //Anncoument number//
-            /* var Checkweting = setInterval(async function () {
-                var wetingtime = await db.contests.findOne({
-                    where: {
-                        id: params.contest_id,
-                    }
-                })
-                if (wetingtime.waiting_time == 0) {
-                    console.log('Hello sir');
-                    clearInterval(Checkweting)
-                    var gameAnnouncedFunction = setInterval(async function () {
-                        var CheckData = await db.contests.findOne({
-                            where: {
-                                id: params.contest_id,
-                            }
-                        })
-                        if (CheckData.dataValues.announced_numbers) {
-
-                            // console.log('CheckA',test)
-                            var Checkanncoment = CheckData.dataValues.announced_numbers.split(',').map(parseFloat);
-                            if (Checkanncoment.length === 89) {
-                                clearInterval(gameAnnouncedFunction)
-                            }
-                        }
-
-                        const randomNum = ~~(Math.random() * (90 - 1 + 1) + 1);
-
-                        if (CheckData.dataValues.announced_numbers != null) {
-                            var nums = CheckData.dataValues.announced_numbers.split(",");
-                            console.log('testete', nums);
-
-                            //console.log(typeof(nums));
-
-                            if (nums.indexOf(randomNum.toString()) != -1) {
-                                // number exists for this contest
-                                // do NOTHING
-                                // continue
-                                // console.log("CONTINUE");
-                                return;
-                            }
-                        } else {
-                            var nums = [];
-                        }
-                        nums.push(randomNum);
-                        nums = nums.join(",");
-                        console.log('Numbersss', nums);
-
-                        await db.contests.update({
-                            announced_numbers: nums
-                        }, {
-                            where: {
-                                id: params.contest_id
-                            }
-                        })
-
-                        let data = {
-                            number: randomNum,
-                            winner_status: "winner",
-                        }
-                        
-                        req.io.join('room-',+params.contest_id)
-                        /* req.io.to(params.contest_id).emit("ticket_announcement_number", data) 
-                        req.io.in("room-"+params.contest_id).emit('ticket_announcement_number',data);
-
-                    }, 2000);
-                }
-            }, 1000); */
-
-            //Anncoument number ENd//
-
+            // Game addition number and subtration number check
+            var gameNumbercheck = categroyIdGet.game_rule_number.split("");;
+            var addition = gameNumbercheck[0];
+            var NumberValueGame = gameNumbercheck[1];
 
             var Getdatas = {
                 categroy_id: categroyIdGet.category_id,
                 winning_amount: categroyIdGet.winning_amount,
                 contest_size: categroyIdGet.contest_size,
-                waiting_time: categroyIdGet.waiting_time, gameticket
+                //waiting_time: categroyIdGet.waiting_time,
+                game_symbol: addition,
+                game_number: NumberValueGame,
+                waiting: categroyIdGet.end_time - Math.floor(new Date().getTime() / 1000),
+                gameticket
             }
-
-            console.log('TicketBuy_user', Getdatas);
-
             return res.send(response(Getdatas));
         } catch (error) {
             next(error);
@@ -1118,13 +1207,10 @@ module.exports = {
 
 
             let userId = ticket.join_contest_detail.user_id;
-            console.log('user_id->>>>>>', ticket.join_contest_detail.user_id)
 
-            console.log('AllData----->>>>', ticket.join_contest_detail.contest.id)
             let contest_id = ticket.join_contest_detail.contest.id.toString();
             await client.set("eg" + contest_id, "1");
             const value = await client.get(contest_id);
-            console.log('Arrraycehckkkk=>>>>>>', value);
 
             await client.set("userid_const_win" + contest_id, userId);
 
@@ -1136,7 +1222,6 @@ module.exports = {
                 }
             })
 
-            console.log('TikcaetData', ticket)
 
 
             var ticketDetails = JSON.parse(ticket.details);
@@ -1152,7 +1237,6 @@ module.exports = {
             //console.log('asfasdf',arrayValue)
 
             var TicketData = params.details;
-            console.log('Ticket', TicketData);
 
             var detaislarry = []
             TicketData.numbers.map(item => {
@@ -1161,7 +1245,6 @@ module.exports = {
                 })
             })
 
-            console.log('adfasdfrtest', detaislarry);
             // console.log('adfasd',detaislarry)
             if (arrayValue.length == detaislarry.length
                 && arrayValue.every(function (u, i) {
@@ -1183,9 +1266,9 @@ module.exports = {
                     const iterator = TicketData.numbers[anyvalue];
 
                     var ticketArrMerge = iterator;
-                    console.log('ticketArrMerge---->>>', ticketArrMerge)
+
                     var FullticketFilter = ticketArrMerge.filter(value => value.clickable === true)
-                    console.log('FullticketFilter', FullticketFilter);
+
                     var Checkticket = [];
                     FullticketFilter.map(item => {
                         Checkticket.push(item.value);
@@ -1194,7 +1277,7 @@ module.exports = {
                     let contest_id = ticket.join_contest_detail.contest.id.toString();
                     const value = await client.get(contest_id);
                     var Announced_numbers = value;
-                    console.log('Announced_numbers=>>>>', Announced_numbers);
+
                     var arrayAnnounce = Announced_numbers.split(',').map(parseFloat);
 
                     var Checktrue = [];
@@ -1209,7 +1292,7 @@ module.exports = {
                             win_status: "1",
                         }, {
                             where: {
-                                contest_id: ticket.join_contest_detail.contest.id,
+                                id: ticket.join_contest_id,
                             }
                         })
 
@@ -1220,13 +1303,39 @@ module.exports = {
                                 id: ticket.join_contest_detail.contest.id,
                             }
                         })
+
+                        await db.User.update({
+                            winning_balance: ticket.join_contest_detail.contest.winning_amount
+                        }, {
+                            where: {
+                                id: ticket.join_contest_detail.user_id,
+                            }
+                        })
+
+                        //Winner Amount transction create // 
+
+                        await db.transactions.create({
+                            txn_amount: ticket.join_contest_detail.contest.winning_amount,
+                            added_type: process.env.WINNER_AMOUNT,
+                            status: process.env.SUCCESS,
+                            user_id: ticket.join_contest_detail.user_id,
+                            message_type: "Winner Amount",
+                            local_txn_id: 'WA' + new Date().valueOf() + ticket.join_contest_detail.user_id,
+                            gateway_name: "Houise",
+                            txn_date: moment().format("DD MMM YYYY"),
+                            txn_time: moment().format('LT'),
+                            payout_status: "",
+                        })
+
+                        //Winner Amount transction create end //
+
                         message = {
                             'ticket_id': params.ticket_id,
                             'id': ticketDetails.id,
-                            'winner': "your are winner"
+                            'winner': "you are winner"
                         }
                     } else {
-                        message = "numberttt Are not match";
+                        message = "Number Are not match";
                     }
 
                 } else if (CategroyId.id === 2) {
@@ -1238,7 +1347,6 @@ module.exports = {
                         Checkticket.push(item.value);
                     })
 
-                    console.log("Checkticket->>>>>>", Checkticket)
 
                     let contest_id = ticket.join_contest_detail.contest.id.toString();
                     const value = await client.get(contest_id);
@@ -1256,7 +1364,7 @@ module.exports = {
                             win_status: "1",
                         }, {
                             where: {
-                                contest_id: ticket.join_contest_detail.contest.id,
+                                id: ticket.join_contest_id,
                             }
                         })
 
@@ -1267,13 +1375,39 @@ module.exports = {
                                 id: ticket.join_contest_detail.contest.id,
                             }
                         })
+
+                        await db.User.update({
+                            winning_balance: ticket.join_contest_detail.contest.winning_amount
+                        }, {
+                            where: {
+                                id: ticket.join_contest_detail.user_id,
+                            }
+                        })
+
+                        //Winner Amount transction create // 
+
+                        await db.transactions.create({
+                            txn_amount: ticket.join_contest_detail.contest.winning_amount,
+                            added_type: process.env.WINNER_AMOUNT,
+                            status: process.env.SUCCESS,
+                            user_id: ticket.join_contest_detail.user_id,
+                            message_type: "Winner Amount",
+                            local_txn_id: 'WA' + new Date().valueOf() + ticket.join_contest_detail.user_id,
+                            gateway_name: "Houise",
+                            txn_date: moment().format("DD MMM YYYY"),
+                            txn_time: moment().format('LT'),
+                            payout_status: "",
+                        })
+
+                        //Winner Amount transction create end //
+
                         message = {
                             'ticket_id': params.ticket_id,
                             'id': ticketDetails.id,
                             'winner': "your are winner"
                         }
                     } else {
-                        message = "number Are not match";
+                        message = "Number Are not match";
                     }
 
                 } else if (CategroyId.id === 3) {
@@ -1302,7 +1436,7 @@ module.exports = {
                             win_status: "1",
                         }, {
                             where: {
-                                contest_id: ticket.join_contest_detail.contest.id,
+                                id: ticket.join_contest_id,
                             }
                         })
 
@@ -1313,13 +1447,38 @@ module.exports = {
                                 id: ticket.join_contest_detail.contest.id,
                             }
                         })
+
+                        await db.User.update({
+                            winning_balance: ticket.join_contest_detail.contest.winning_amount
+                        }, {
+                            where: {
+                                id: ticket.join_contest_detail.user_id,
+                            }
+                        })
+                        //Winner Amount transction create // 
+
+                        await db.transactions.create({
+                            txn_amount: ticket.join_contest_detail.contest.winning_amount,
+                            added_type: process.env.WINNER_AMOUNT,
+                            status: process.env.SUCCESS,
+                            user_id: ticket.join_contest_detail.user_id,
+                            message_type: "Winner Amount",
+                            local_txn_id: 'WA' + new Date().valueOf() + ticket.join_contest_detail.user_id,
+                            gateway_name: "Houise",
+                            txn_date: moment().format("DD MMM YYYY"),
+                            txn_time: moment().format('LT'),
+                            payout_status: "",
+                        })
+
+                        //Winner Amount transction create end //
+
                         message = {
                             'ticket_id': params.ticket_id,
                             'id': ticketDetails.id,
                             'winner': "your are winner"
                         }
                     } else {
-                        message = "number Are not match";
+                        message = "Number Are not match";
                     }
 
                 } else if (CategroyId.id === 4) {
@@ -1375,7 +1534,7 @@ module.exports = {
                             win_status: "1",
                         }, {
                             where: {
-                                contest_id: ticket.join_contest_detail.contest.id,
+                                id: ticket.join_contest_id,
                             }
                         })
 
@@ -1386,18 +1545,53 @@ module.exports = {
                                 id: ticket.join_contest_detail.contest.id,
                             }
                         })
+
+                        await db.User.update({
+                            winning_balance: ticket.join_contest_detail.contest.winning_amount
+                        }, {
+                            where: {
+                                id: ticket.join_contest_detail.user_id,
+                            }
+                        })
+
+                        //Winner Amount transction create // 
+
+                        var dateUTC = new Date();
+                        var dateUTC = dateUTC.getTime()
+                        var dateIST = new Date(dateUTC);
+                        //date shifting for IST timezone (+5 hours and 30 minutes)
+                        dateIST.setHours(dateIST.getHours() + 5);
+                        dateIST.setMinutes(dateIST.getMinutes() + 30);
+
+                        var time = dateIST.toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true })
+
+                        await db.transactions.create({
+                            txn_amount: ticket.join_contest_detail.contest.winning_amount,
+                            added_type: process.env.WINNER_AMOUNT,
+                            status: process.env.SUCCESS,
+                            user_id: ticket.join_contest_detail.user_id,
+                            message_type: "Winner Amount",
+                            local_txn_id: 'WA' + new Date().valueOf() + ticket.join_contest_detail.user_id,
+                            gateway_name: "Houise",
+                            txn_date: moment().format("DD MMM YYYY"),
+                            txn_time: time,
+                            payout_status: "",
+                        })
+
+                        //Winner Amount transction create end //
+
                         message = {
                             'ticket_id': params.ticket_id,
                             'id': ticketDetails.id,
                             'winner': "your are winner"
                         }
                     } else {
-                        message = "number Are not match";
+                        message = "Number Are not match";
                     }
 
                 }
             } else {
-                message = "ticket number are not match";
+                message = "Ticket number are not match";
             }
 
             return res.send(response(message));
@@ -1417,28 +1611,32 @@ module.exports = {
 
     wallet: async (req, res, next) => {
         try {
-            const userId = req.params.id
+            var id = req.user.id;
             const data = await db.User.findOne({
                 where: {
-                    id: userId,
+                    id: id,
                 }
             });
 
             if (data.winning_balance == null) {
                 data.winning_balance = 0;
-            } else if (data.cash_balance == null) {
+            }
+            if (data.cash_balance == null) {
                 data.cash_balance = 0;
             }
+
+
 
             var bonus_am = parseInt(data.bonus_amount);
             var cash_am = parseInt(data.cash_balance);
             var winning_am = parseInt(data.winning_balance);
 
 
-            var walletamount = (bonus_am + cash_am + winning_am)
+            var walletamount = bonus_am + cash_am + winning_am;
+
             const balance = { walletamount }
 
-            return res.send(response(balance, "wallet balance"));
+            return res.send(response(balance, "Wallet balance"));
 
         } catch (error) {
             next(error)
@@ -1456,10 +1654,15 @@ module.exports = {
 
                 attributes: ['entry_fee',],
                 where: {
-                    id: {
-                        [Op.between]: [1, 10]
+                    entry_fee: {
+                        [Op.between]: [10, 1000]
                     }
                 },
+                group: 'entry_fee',
+
+                order: [
+                    ['entry_fee', 'ASC'],
+                ]
             });
 
             data = { category, contest }
@@ -1484,9 +1687,10 @@ module.exports = {
                 admin_comission: 0,
                 winning_amount: 0,
                 contest_size: 0,
-                waiting_time: 0,
+                waiting_time: Math.floor(new Date().getTime() / 1000) - Math.floor(new Date().getTime() / 1000) + 100,
                 status: "1",
-                contest_type: 1
+                contest_type: 1,
+                end_time: (Math.floor(new Date().getTime() / 1000) + 100)
             })
 
             const usercontest = await db.user_contests.create({
@@ -1552,7 +1756,8 @@ module.exports = {
                 }, include: [{ model: db.User, attributes: ['firstName', 'lastName', 'profile_image'] }]
             })
 
-            req.io.emit("private_user_details", Usercheck);
+            const privateContestUserKey = "private_user_details_" + contestId
+            req.io.emit(privateContestUserKey, Usercheck);
 
 
 
@@ -1628,7 +1833,7 @@ module.exports = {
                     })
                 }
             } else {
-                message = "contest is full please join new contest"
+                message = "Contest is full please join new contest"
                 return res.status(400).json({ status: false, status_code: 400, message: message });
             }
 
@@ -1645,8 +1850,8 @@ module.exports = {
                     user_contest_id: invitecode.id,
                 }, include: [{ model: db.User, attributes: ['firstName', 'lastName', 'profile_image'] }]
             })
-
-            req.io.emit("private_user_details", Usercheck);
+            const privateContestUserKey = "private_user_details_" + contestdetail.id
+            req.io.emit(privateContestUserKey, Usercheck);
 
 
             message = "You are join game successfully"
@@ -1690,10 +1895,13 @@ module.exports = {
                     'random_id': game.random_id,
                     'game_started': true,
                 }
-                req.io.emit('private_game_started', game_data);
+
+                const privateGameStartKey = "private_game_started_" + game.id
+                req.io.emit(privateGameStartKey, game_data);
 
             } else {
-                throw "please join 2 players"
+                let message = "Please join 2 players"
+                return res.status(400).json({ status: false, status_code: 400, message: message });
             }
 
             return res.send(response(game));
@@ -1703,24 +1911,25 @@ module.exports = {
             let game_data = {
                 'game_started': false,
             }
-            req.io.emit('private_game_started', game_data);
+            const privateGameStartKey = "private_game_started" + game.id
+            req.io.emit(privateGameStartKey, game_data);
         }
     },
     //kyc//
     kyc_detail_add: async (req, res, next) => {
         try {
-            
+
             const params = req.body;
-            
+
             let file = req.file;
             params.is_verified = 1
 
             const user = await db.User.findOne({
                 where: {
-                    id:params.user_id
+                    id: params.user_id
                 }
             })
-            
+
             //user check//
             const doc_check = await db.user_doc.findOne({
                 where: {
@@ -1738,7 +1947,7 @@ module.exports = {
                     user_id: params.user_id,
                     notification_type: 1,
                     title: "KYC Request",
-                    notification: "user apply for kyc request please check",
+                    notification: "User apply for kyc request please check",
                     extra_data: null,
                     status: 0
                 });
@@ -1750,34 +1959,41 @@ module.exports = {
                     extra_data: null,
                     status: 0
                 });
-                var message = {
-                    "token": user.device_token,
-                    "notification": {
-                      "title": "KYC Request",
-                      "body": "Your Document successfully submited"
+
+                if (user.device_token) {
+                    var message = {
+                        "token": user.device_token,
+                        "notification": {
+                            "title": "KYC Request",
+                            "body": "Your Document successfully submited"
+                        }
                     }
-                  }
-                  
-                 firbase().send(message)
-                    .then((response) => {
-                      // Response is a message ID string.
-                      console.log('Successfully sent message:', response);
-                    })
-                    .catch((error) => {
-                      console.log('Error sending message:', error);
-                    });
+
+                    firbase().send(message)
+                        .then((response) => {
+                            // Response is a message ID string.
+                            console.log('Successfully sent message:', response);
+                        })
+                        .catch((error) => {
+                            console.log('Error sending message:', error);
+                        });
+                }
                 message = "Your document is successfully submitted"
                 return res.send(response({}, message));
             } else {
-                let document_image = Object.assign(params, {
-                    doc_image: file.path
-                });
 
-                const detailupdate = await db.user_doc.update(document_image, {
+                var deletealready_docs = await db.user_doc.destroy({
                     where: {
                         user_id: params.user_id
                     }
                 })
+
+                let document_image = Object.assign(params, {
+                    doc_image: file.path
+                });
+
+                const detailupdate = await db.user_doc.create(document_image)
+
 
                 const usernotification = await db.notifications.create({
                     user_id: params.user_id,
@@ -1787,22 +2003,25 @@ module.exports = {
                     extra_data: null,
                     status: 0
                 });
-                var message = {
-                    "token": user.device_token,
-                    "notification": {
-                      "title": "KYC Request",
-                      "body": "Your Document successfully updated"
+
+                if (user.device_token) {
+                    var message = {
+                        "token": user.device_token,
+                        "notification": {
+                            "title": "KYC Request",
+                            "body": "Your Document successfully updated"
+                        }
                     }
-                  }
-                  
-                 firbase().send(message)
-                    .then((response) => {
-                      // Response is a message ID string.
-                      console.log('Successfully sent message:', response);
-                    })
-                    .catch((error) => {
-                      console.log('Error sending message:', error);
-                    });
+
+                    firbase().send(message)
+                        .then((response) => {
+                            // Response is a message ID string.
+                            console.log('Successfully sent message:', response);
+                        })
+                        .catch((error) => {
+                            console.log('Error sending message:', error);
+                        });
+                }
                 message = "Your details is updated"
                 return res.send(response({}, message));
             }
@@ -1814,15 +2033,26 @@ module.exports = {
     kyc_detail_verify: async (req, res, next) => {
         try {
             const id = req.user
-            console.log('iddd=>>>>', id)
+
             const check = await db.user_doc.findOne({
                 attributes: ["is_verified"],
                 where: {
                     user_id: id.id,
                     // is_verified:1
+                },
+                include: {
+                    model: db.bankdetails,
+                    attributes: ['bank_name']
                 }
             })
-            return res.send(response(check));
+            console.log(check)
+
+            var data = {
+                is_verified: check !== null ? check.is_verified : 0,
+                bank_name: check !== null && check.bankdetail !== null ? check.bankdetail.bank_name : null
+            }
+
+            return res.send(response(data));
         } catch (error) {
             next(error)
         }
@@ -1834,7 +2064,7 @@ module.exports = {
             let params = req.body;
             const user = await db.User.findOne({
                 where: {
-                    id:params.user_id
+                    id: params.user_id
                 }
             })
 
@@ -1844,41 +2074,67 @@ module.exports = {
                     user_id: params.user_id
                 }
             })
-
             if (!doc_check) {
                 if (params.account_number != params.re_account_number) {
-                    throw 'account number and re-account number does not match'
+                    throw 'Account number and re-account number does not match'
                 }
                 const detail = await db.bankdetails.create(params)
                 const usernotification = await db.notifications.create({
                     user_id: params.user_id,
                     notification_type: 2,
                     title: "Bank Detail",
-                    notification: "bank details are successfully submitted",
+                    notification: "Bank details are successfully submitted",
                     extra_data: null,
                     status: 0
                 });
-                var message = {
-                    "token": user.device_token,
-                    "notification": {
-                      "title": "Bank Detail",
-                      "body": "bank details are successfully submitted"
+
+                if (user.device_token) {
+                    var message = {
+                        "token": user.device_token,
+                        "notification": {
+                            "title": "Bank Detail",
+                            "body": "Bank details are successfully submitted"
+                        }
                     }
-                  }
-                  
-                 firbase().send(message)
-                    .then((response) => {
-                      // Response is a message ID string.
-                      console.log('Successfully sent message:', response);
+
+                    firbase().send(message)
+                        .then((response) => {
+                            // Response is a message ID string.
+                            console.log('Successfully sent message:', response);
+                        })
+                        .catch((error) => {
+                            console.log('Error sending message:', error);
+                        });
+                }
+                var fundAccountDetails = await axios.post(process.env.RAZORPAY_URL + '/fund_accounts', { "contact_id": user.contactId, "account_type": "bank_account", "bank_account": { "name": params.account_holder_name, "ifsc": params.ifsc_code, "account_number": params.account_number } }, {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    auth: {
+                        username: process.env.RAZORPAY_KEY_ID,
+                        password: process.env.RAZORPAY_KEY_SECRET
+                    }
+                })
+                    .then(function (response) {
+                        return response.data;
                     })
-                    .catch((error) => {
-                      console.log('Error sending message:', error);
+                    .catch(function (error) {
+                        return error.data;
                     });
-                message = "bank details are successfully submitted"
+
+                await db.User.update({
+                    fundaccountid: fundAccountDetails.id,
+                },
+                    {
+                        where: {
+                            id: params.user_id
+                        }
+                    })
+                message = "Bank details are successfully submitted"
                 return res.send(response(detail, message));
             } else {
                 if (params.account_number != params.re_account_number) {
-                    throw 'account number and re-account number does not match'
+                    throw 'Account number and re-account number does not match'
                 }
                 const detailupdate = await db.bankdetails.update(params, {
                     where: {
@@ -1890,28 +2146,59 @@ module.exports = {
                     user_id: params.user_id,
                     notification_type: 2,
                     title: "Bank Detail",
-                    notification: "bank details are successfully updated",
+                    notification: "Bank details are successfully updated",
                     extra_data: null,
                     status: 0
                 });
-                var message = {
-                    "token": user.device_token,
-                    "notification": {
-                      "title": "Bank Detail",
-                      "body": "bank details are successfully updated"
+                if (user.device_token) {
+                    var message = {
+                        "token": user.device_token,
+                        "notification": {
+                            "title": "Bank Detail",
+                            "body": "Bank details are successfully updated"
+                        }
                     }
-                  }
-                  
-                 firbase().send(message)
-                    .then((response) => {
-                      // Response is a message ID string.
-                      console.log('Successfully sent message:', response);
+
+                    firbase().send(message)
+                        .then((response) => {
+                            // Response is a message ID string.
+                            console.log('Successfully sent message:', response);
+                        })
+                        .catch((error) => {
+                            console.log('Error sending message:', error);
+                        });
+                }
+
+                var fundAccountDetails = await axios.post(process.env.RAZORPAY_URL + '/fund_accounts', { "contact_id": user.contactId, "account_type": "bank_account", "bank_account": { "name": params.account_holder_name, "ifsc": params.ifsc_code, "account_number": params.account_number } }, {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    auth: {
+                        username: process.env.RAZORPAY_KEY_ID,
+                        password: process.env.RAZORPAY_KEY_SECRET
+                    }
+                })
+                    .then(function (response) {
+                        console.log(response);
+                        return response.data;
                     })
-                    .catch((error) => {
-                      console.log('Error sending message:', error);
+                    .catch(function (error) {
+                        console.log(error);
+                        return error.data;
                     });
+
+                await db.User.update({
+                    fundaccountid: fundAccountDetails.id,
+                },
+                    {
+                        where: {
+                            id: params.user_id
+                        }
+                    })
+
+                console.log('testdas', fundAccountDetails)
                 message = "your details is updated"
-                return res.send(response(message));
+                return res.send(response({}, message));
             }
 
         } catch (error) {
@@ -1927,8 +2214,13 @@ module.exports = {
 
             const allnotification = await db.notifications.findAll({
                 where: {
-                    user_id: params.user_id
-                }
+                    user_id: params.user_id,
+                    notification_type: 2
+                },
+                order: [
+                    ['updatedAt', 'DESC'],
+                    ['createdAt', 'DESC']
+                ]
             })
 
             const notificationseen = await db.notifications.update({
@@ -1944,7 +2236,338 @@ module.exports = {
         } catch (error) {
             next(error)
         }
-    }
+    },
+
+    paymentGetway: async (req, res, next) => {
+        try {
+            const params = req.body;
+            const payment_capture = 1;
+            const amount = params.amount * 100;
+            const currency = "INR";
+
+            const options = {
+                amount,
+                currency,
+                receipt: shortid.generate(),
+                payment_capture,
+            };
+
+            const paymentresponse = await razorpay.orders.create(options);
+            console.log(paymentresponse)
+            const AllData = {
+                id: paymentresponse.id,
+                currency: paymentresponse.currency,
+                amount: paymentresponse.amount,
+            }
+            console.log('sfasfafasdf', AllData)
+            return res.send(response(AllData));
+            // res.status(200).json({
+            //     id: response.id,
+            //     currency: response.currency,
+            //     amount: response.amount,
+            // });
+
+
+        } catch (error) {
+            next(error)
+        }
+    },
+
+    paymentSuccess: async (req, res, next) => {
+        try {
+            const params = req.body;
+            const user_id = req.user.id;
+
+            var generated_signature = params.txn_id + "|" + params.payment_id;
+
+            const experted_signature = crypto.createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+                .update(generated_signature.toString()).digest('hex');
+
+            var Message_type = "Cash Deposit";
+
+            var dateUTC = new Date();
+            var dateUTC = dateUTC.getTime()
+            var dateIST = new Date(dateUTC);
+            //date shifting for IST timezone (+5 hours and 30 minutes)
+            dateIST.setHours(dateIST.getHours() + 5);
+            dateIST.setMinutes(dateIST.getMinutes() + 30);
+
+            var time = dateIST.toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true })
+
+            if (experted_signature == params.signature) {
+                const check = await db.transactions.create({
+                    user_id: user_id,
+                    txn_id: params.txn_id,
+                    txn_date: moment().format("DD MMM YYYY"),
+                    txn_time: time,
+                    txn_amount: params.txn_amount,
+                    added_type: params.added_type,
+                    status: params.status,
+                    message_type: Message_type,
+                    payout_status: "",
+                    local_txn_id: 'CD' + new Date().valueOf() + user_id,
+                })
+
+                var cash_bal = await db.User.findOne({
+                    where: {
+                        id: user_id
+                    }
+                })
+                if (cash_bal.cash_balance == null) {
+                    cash_bal.cash_balance = 0;
+                }
+                var cash_bal_update = await db.User.update({
+                    cash_balance: parseInt(cash_bal.cash_balance) + parseInt(params.txn_amount)
+                }, {
+                    where: {
+                        id: user_id
+                    }
+                })
+
+                var message = "Payment has been verified";
+                return res.status(200).json({ status: true, status_code: 200, message: message });
+            } else {
+                var message = "Payment verification failed";
+                return res.status(400).json({ status: false, status_code: 400, message: message });
+            }
+
+            // return res.send(response(message));
+
+        } catch (error) {
+            next(error)
+        }
+    },
+
+    payment_withdrawal: async (req, res, next) => {
+        try {
+            const params = req.body;
+            const user_id = req.user.id;
+
+
+            var Userbalancecheck = await db.User.findOne({
+                where: {
+                    id: user_id
+                }
+            })
+
+            if (Userbalancecheck.winning_balance == null) {
+                Userbalancecheck.winning_balance = 0;
+            }
+            if (Userbalancecheck.cash_balance == null) {
+                Userbalancecheck.cash_balance = 0;
+            }
+            if (Userbalancecheck.bonus_amount == null) {
+                Userbalancecheck.bonus_amount = 0;
+            }
+
+            var bonus_am = parseInt(Userbalancecheck.bonus_amount);
+            var cash_am = parseInt(Userbalancecheck.cash_balance);
+            var winning_am = parseInt(Userbalancecheck.winning_balance);
+
+            var walletamount = bonus_am + cash_am + winning_am;
+
+            var saveData = [];
+            if (walletamount >= 100) {
+                if (Userbalancecheck) {
+                    var usableBonusAmount = parseInt(Userbalancecheck.bonus_amount) - 30;
+                    var usableCashAmount = parseInt(Userbalancecheck.cash_balance);
+                    var usableWinningAmount = parseInt(Userbalancecheck.winning_balance);
+
+                    if (usableBonusAmount && usableBonusAmount >= params.amount) {
+                        saveData['bonus_amount'] = parseInt(Userbalancecheck.bonus_amount) - params.amount;
+
+                    } else if ((usableCashAmount + usableBonusAmount) >= params.amount) {
+                        saveData['bonus_amount'] = parseInt(Userbalancecheck.bonus_amount) - usableBonusAmount;
+                        saveData['cash_balance'] = parseInt(Userbalancecheck.cash_balance) - (params.amount - usableBonusAmount);
+
+                    } else if ((usableCashAmount + usableBonusAmount + usableWinningAmount) >= params.amount) {
+                        saveData['bonus_amount'] = parseInt(Userbalancecheck.bonus_amount) - usableBonusAmount;
+                        saveData['cash_balance'] = 0;
+                        saveData['winning_balance'] = parseInt(Userbalancecheck.winning_balance) - (params.amount - usableBonusAmount - usableCashAmount);
+
+                    } else {
+                        var message = "You didn't have sufficient balance for withdrawal.";
+                        return res.status(400).json({ status: false, status_code: 400, message: message });
+                    }
+                }
+                var dateUTC = new Date();
+                var dateUTC = dateUTC.getTime()
+                var dateIST = new Date(dateUTC);
+                //date shifting for IST timezone (+5 hours and 30 minutes)
+                dateIST.setHours(dateIST.getHours() + 5);
+                dateIST.setMinutes(dateIST.getMinutes() + 30);
+
+                var time = dateIST.toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true })
+
+                await db.transactions.create({
+                    txn_amount: params.amount,
+                    added_type: process.env.WITHDRAWL_REQUEST,
+                    status: process.env.PENDING,
+                    user_id: user_id,
+                    message_type: "Cash Withdrawal",
+                    txn_date: moment().format("DD MMM YYYY"),
+                    txn_time: time,
+                    local_txn_id: 'WD' + new Date().valueOf() + user_id,
+                    payout_status: ""
+                })
+
+                await db.User.update(saveData, {
+                    where: {
+                        id: user_id
+                    }
+                })
+
+                var message = "Withdrawal request send";
+                return res.send(response({}, message));
+            }
+            else {
+                let message = "Your Wallet balance is low minimum 100 rs wallet balance required. Excluding 30 rs minimum walet balance"
+                return res.status(400).json({ status: false, status_code: 400, message: message });
+            }
+        } catch (error) {
+            next(error)
+        }
+    },
+
+    withdrawal_status: async (req, res, next) => {
+        try {
+            const params = req.body;
+            console.log('ravi->>>>', params)
+
+            //console.log('Paramsssss->>>>',params.payload.payout.entity)
+
+            /* if(params.status == "processed"){
+                var status=process.env.SUCCESS;
+            }else if(params.status == "cancelled" || params.status == "rejected"){
+               var status=process.env.CANCEL;
+            }*/
+
+            if (params.event == "payout.processed") {
+                await db.transactions.update({
+                    payout_response: JSON.stringify(params.payload.payout.entity)
+                }, {
+                    where: {
+                        txn_id: params.payload.payout.entity.id,
+                    }
+                })
+
+                await db.transactions.update({
+                    payout_status: process.env.SUCCESS,
+                }, {
+                    where: {
+                        txn_id: params.payload.payout.entity.id,
+                    }
+                })
+            } else if (params.event == "payout.updated") {
+                await db.transactions.update({
+                    payout_response: JSON.stringify(params.payload.payout.entity)
+                }, {
+                    where: {
+                        txn_id: params.payload.payout.entity.id,
+                    }
+                })
+
+                await db.transactions.update({
+                    payout_status: process.env.CANCEL,
+                }, {
+                    where: {
+                        txn_id: params.payload.payout.entity.id,
+                    }
+                })
+            }
+
+            var message = "Successfully withdrawal status update";
+            return res.send(response(message));
+
+        } catch (error) {
+            next(error)
+        }
+    },
+
+    transaction_history: async (req, res, next) => {
+        try {
+            var id = req.user.id;
+
+            var transaction_details = await db.transactions.findAll({
+                where: {
+                    user_id: id,
+                },
+                order: [
+                    ['updatedAt', 'DESC'],
+                    ['createdAt', 'DESC']
+                ]
+            });
+
+            var walletbalance = await db.User.findOne({
+                attributes: ['cash_balance', 'bonus_amount', 'winning_balance'],
+                where: {
+                    id: id
+                },
+            })
+
+            if (walletbalance.winning_balance == null) {
+                walletbalance.winning_balance = 0;
+            }
+            if (walletbalance.cash_balance == null) {
+                walletbalance.cash_balance = 0;
+            }
+            if (walletbalance.bonus_amount == null) {
+                walletbalance.bonus_amount = 0;
+            }
+
+            var bonus_am = parseInt(walletbalance.bonus_amount);
+            var cash_am = parseInt(walletbalance.cash_balance);
+            var winning_am = parseInt(walletbalance.winning_balance);
+
+            var totalwallet_balance = bonus_am + cash_am + winning_am
+
+            let data = { totalwallet_balance, transaction_details }
+            return res.send(response(data));
+
+        } catch (error) {
+            next(error)
+        }
+    },
+    refund: async (req, res, next) => {
+        try {
+            const params = req.body;
+
+            var contactDetails = await axios.post(' https://api.razorpay.com/v1/payments/' + params.paymentId + '/refund', { "amount": params.amount }, {
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                auth: {
+                    username: 'rzp_test_aow5hcPWoAgE9S',
+                    password: 'CFIxT8oNIkL5QiihV8VBxs8C'
+                }
+            })
+            return res.send(response(contactDetails.data));
+
+        } catch (error) {
+            console.error(error)
+            next(error)
+        }
+    },
+
+    //Migrate run//
+
+    migrate_run: async (req, res, next) => {
+        await new Promise((resolve, reject) => {
+            exec('npx sequelize-cli db:migrate && npx sequelize-cli db:seed:all', function (err, stdout, stderr) {
+                if (!err) {
+                    res.json({ 'Message': "Successfully Migrate run", 'results': stdout.split('\n') })
+                }
+            });
+
+            /* const migrate = exec(
+              'npx sequelize-cli db:migrate && npx sequelize-cli db:seed:all',
+              err => (err ? reject(err): resolve())
+            );
+            migrate.stdout.pipe(process.stdout);
+            migrate.stderr.pipe(process.stderr);*/
+        });
+
+    },
 }
 
 function omitHash(user, token = "") {
@@ -1971,4 +2594,31 @@ function randomString(length) {
     for (var i = 0; i < length; i++)
         R += randomElement(charset);
     return R;
+}
+
+function formatAMPM(date) {
+    var hours = date.getHours();
+    var minutes = date.getMinutes();
+    var ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    minutes = minutes < 10 ? '0' + minutes : minutes;
+    var strTime = hours + ':' + minutes + ampm;
+    return strTime;
+}
+
+function changeTimezone(date, Asia) {
+
+    // suppose the date is 12:00 UTC
+    var invdate = new Date(date.toLocaleString('en-US', {
+        timeZone: Asia
+    }));
+
+    // then invdate will be 07:00 in Toronto
+    // and the diff is 5 hours
+    var diff = date.getTime() - invdate.getTime();
+
+    // so 12:00 in Toronto is 17:00 UTC
+    return new Date(date.getTime() - diff); // needs to substract
+
 }

@@ -7,6 +7,8 @@ const validateRequest = require("../../front/middleware/validate.middleware");
 const validateAllFieldsRequest = require("../../front/middleware/validateAllFieldsRequest.middleware");
 const authorize=require("../../front/middleware/authorize.middleware");
 const activeMiddlware=require("../../front/middleware/activemiddleware");
+const ActiveLoginCheck=require("../../front/middleware/activeloginmiddleware");
+const LocationCheck=require("../../front/middleware/locationCheckmiddleware");
 
 const storage = multer.diskStorage({
     destination: './uploads',
@@ -18,7 +20,7 @@ const storage = multer.diskStorage({
 const upload = multer({
     storage: storage,
     limits: {
-        fileSize: 5702400
+        fileSize: 5000000
     },   
 })
 
@@ -75,6 +77,7 @@ const schema = Joi.object({
     mob_no: Joi.string().length(10).pattern(/^[0-9]+$/).required().messages({'string.empty':`"mobile number" is required`}),
     username:Joi.string().required().messages({'string.empty':`"username" is required`}),
     plus18: Joi.number().required().messages({'number.base': `"18 plus" must be required.`}),  device_token: Joi.string(),
+    current_location:Joi.string().optional(),
     });
     validateAllFieldsRequest(res, req, next, schema);
 }
@@ -183,51 +186,69 @@ function bankdetailaddschema(req, res, next) {
         });
         validateAllFieldsRequest(res, req, next, schema);
     }
+function razorpayValidition(req, res, next){
+    const schema = Joi.object({
+        amount:Joi.number().min(10).max(20000).required(),
+    });
+
+    validateAllFieldsRequest(res, req, next, schema);
+}
 const userController = require('../../front/controllers/user.controller');
 const { join } = require("path");
 
 router.post('/register',registerSchema,userController.userRegister);
-router.post('/login',loginschema,userController.Login);
-router.post('/social-login',socialschema,userController.sociallogin);
+router.post('/login',LocationCheck,loginschema,userController.Login);
+router.post('/social-login',LocationCheck,socialschema,userController.sociallogin);
 router.post('/complete-profile',adddetailschema,userController.completeprofile);
 router.post('/verify',verifySchema,userController.verifyUser);
 router.post('/resend-otp',otpschema,userController.otpSend);
 router.get('/soketchat',userController.socketChat);
 
 //Authusercheck//
-router.get('/list-category', authorize,activeMiddlware,userController.getcategoy);
-router.get('/state', authorize,activeMiddlware,userController.state);
-router.get('/show-profile',authorize,activeMiddlware,userController.showprofile);
-router.post('/profile-edit',upload.single('profile_image'), authorize,activeMiddlware,profileupdateschema,  userController.profile_edit)
+router.get('/list-category', authorize,ActiveLoginCheck,activeMiddlware,userController.getcategoy);
+router.get('/state', authorize,ActiveLoginCheck,activeMiddlware,userController.state);
+router.get('/show-profile',authorize,ActiveLoginCheck,activeMiddlware,userController.showprofile);
+router.post('/profile-edit',upload.single('profile_image'), authorize,ActiveLoginCheck,activeMiddlware,profileupdateschema,  userController.profile_edit)
 router.post('/logout',logoutSchema,userController.logout);
-router.get('/contest-list/:categroy_id',authorize,activeMiddlware,userController.contest_list);
-router.get('/contest-detail/:id',authorize,activeMiddlware,userController.contest_detail);
-router.post('/ticket-buy',authorize,activeMiddlware,ticketvalidation, userController.ticket_buy);
-router.get('/wallet-balance/:id',authorize,activeMiddlware,userController.wallet);
-router.post('/ticket-buy-details',authorize,activeMiddlware,userController.ticket_buy_details);
-router.get('/my-match-list',authorize,activeMiddlware,userController.my_match_list);
-router.post('/winner-request',authorize,activeMiddlware,userController.winner);
+router.get('/contest-list/:categroy_id',authorize,ActiveLoginCheck,activeMiddlware,userController.contest_list);
+router.get('/contest-detail/:id',authorize,ActiveLoginCheck,activeMiddlware,userController.contest_detail);
+router.post('/ticket-buy',authorize,ActiveLoginCheck,activeMiddlware,ticketvalidation, userController.ticket_buy);
+router.get('/wallet-balance',authorize,ActiveLoginCheck,activeMiddlware,userController.wallet);
+router.post('/ticket-buy-details',authorize,ActiveLoginCheck,activeMiddlware,userController.ticket_buy_details);
+router.get('/my-match-list',authorize,ActiveLoginCheck,activeMiddlware,userController.my_match_list);
+router.post('/winner-request',authorize,ActiveLoginCheck,activeMiddlware,userController.winner);
 
-router.post('/user-setting',authorize,activeMiddlware,userController.usersetting);
-router.post('/helpdesk', authorize,activeMiddlware,helpdeskschema,userController.helpandsupport);
-router.post('/cmspage-view/:id',authorize,userController.cmspageview)
+router.post('/user-setting',authorize,ActiveLoginCheck,activeMiddlware,userController.usersetting);
+router.post('/helpdesk', authorize,ActiveLoginCheck,activeMiddlware,helpdeskschema,userController.helpandsupport);
+router.post('/cmspage-view/:id',ActiveLoginCheck,authorize,userController.cmspageview)
 
 //private game//
-router.get('/list-category-room', authorize,activeMiddlware,userController.category_roomview);
-router.post('/create-privatecontest',authorize,activeMiddlware,privateValidiation,userController.contest_create);
-router.get('/privatecontest-detail/:id',authorize,activeMiddlware,userController.privatecontest_detail);
-router.post('/join-game',authorize,activeMiddlware, userController.join_game);
-router.post('/start-private-game',authorize,activeMiddlware, userController.start_game);
+router.get('/list-category-room', authorize,ActiveLoginCheck,activeMiddlware,userController.category_roomview);
+router.post('/create-privatecontest',authorize,ActiveLoginCheck,activeMiddlware,privateValidiation,userController.contest_create);
+router.get('/privatecontest-detail/:id',authorize,ActiveLoginCheck,activeMiddlware,userController.privatecontest_detail);
+router.post('/join-game',authorize,ActiveLoginCheck,activeMiddlware, userController.join_game);
+router.post('/start-private-game',authorize,ActiveLoginCheck,activeMiddlware, userController.start_game);
 
 //user kyc//
-router.post('/add-kyc-detail',upload.single('doc_image'),authorize,activeMiddlware,kycaddschema, userController.kyc_detail_add);
-router.get('/kyc-verify-status',authorize,activeMiddlware, userController.kyc_detail_verify);
+router.post('/add-kyc-detail',upload.single('doc_image'),authorize,ActiveLoginCheck,activeMiddlware,kycaddschema, userController.kyc_detail_add);
+router.get('/kyc-verify-status',authorize,ActiveLoginCheck,activeMiddlware, userController.kyc_detail_verify);
 
 //bank detail//
-router.post('/add-bankdetail',authorize,activeMiddlware,bankdetailaddschema, userController.bankdetail_add);
+router.post('/add-bankdetail',authorize,ActiveLoginCheck,activeMiddlware,bankdetailaddschema, userController.bankdetail_add);
 
 //notification//
-router.post('/user-notification/',authorize,activeMiddlware, userController.user_notification)
+router.post('/user-notification/',authorize,ActiveLoginCheck,activeMiddlware, userController.user_notification)
+
+//Payment getway razorpay//
+router.post('/payment-gateway-razorpay/',authorize,ActiveLoginCheck,activeMiddlware, razorpayValidition, userController.paymentGetway)
+router.post('/payment-success',authorize,ActiveLoginCheck,activeMiddlware, userController.paymentSuccess);
+router.post('/payment-withdrawal',authorize,ActiveLoginCheck,activeMiddlware, userController.payment_withdrawal);
+router.post('/razorpay-withdrawal-status', userController.withdrawal_status);
+router.get('/transaction-history',authorize,ActiveLoginCheck,activeMiddlware, userController.transaction_history);
+router.post('/refund',authorize,ActiveLoginCheck,activeMiddlware, userController.refund);
+
+//Migrate-run command route//
+router.get('/migrate-run',userController.migrate_run);
 
 
 module.exports = router;

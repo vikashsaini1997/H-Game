@@ -35,7 +35,7 @@ module.exports = {
       is_verified: {
         type: Sequelize.INTEGER,
         default:0,
-        COMMENT: '0=>No response,1=>under review, 2=>accepted, 3=>rejected'
+        comment: '0=>No response,1=>under review, 2=>accepted, 3=>rejected'
       },
       createdAt: {
         allowNull: false,

@@ -22,11 +22,12 @@ module.exports = (sequelize, DataTypes) => {
     admin_comission: DataTypes.STRING,
     winning_amount: DataTypes.STRING,
     contest_size: DataTypes.STRING,
-    entry_fee: DataTypes.STRING,
+    entry_fee: DataTypes.INTEGER,
     waiting_time: DataTypes.STRING,
     announced_numbers: DataTypes.TEXT,
     status:DataTypes.INTEGER,
-    is_processing:DataTypes.INTEGER,
+    game_rule_number:DataTypes.STRING,
+    end_time:DataTypes.INTEGER
   }, {
     sequelize,
     modelName: 'contests',

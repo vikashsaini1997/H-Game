@@ -67,8 +67,13 @@ module.exports = {
         allowNull: true,
         type: Sequelize.STRING
       },
-      profile_image: {
+      auth_token: {
         allowNull: true,
+        comment:'user authentication',
+        type: Sequelize.STRING
+      },
+      profile_image: {
+        defaultValue:"",
         type: Sequelize.STRING
       },
       fb_id: {
@@ -120,6 +125,20 @@ module.exports = {
       current_balance:{
         allowNull: true,
         type: Sequelize.STRING,
+      },
+      contactId: {
+        allowNull: true,
+        comment:'razorpay contact ID',
+        type: Sequelize.STRING
+      },
+      fundaccountid: {
+        allowNull: true,
+        comment:'razorpay fund account ID',
+        type: Sequelize.STRING
+      },
+      current_location: {
+        defaultValue:"",
+        type: Sequelize.STRING
       },
       createdAt: {
         allowNull: false,

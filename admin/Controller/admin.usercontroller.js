@@ -7,7 +7,10 @@ const randtoken = require("rand-token");
 var nodemailer = require('nodemailer')
 const path = require('path')
 const moment = require('moment');
+const axios = require('axios');
 const Op = require('sequelize').Op;
+const excelJS = require('exceljs')
+
 
 const firbase = require('../../service/firebase.service')
 
@@ -49,11 +52,11 @@ module.exports = {
         }
       });
       if (!user) {
-        throw "invalid email";
+        throw "Invalid email";
       }
 
       if (!user || !(await bcrypt.compare(params.password, user.password)))
-        throw "password is incorrect.";
+        throw "Password is incorrect.";
 
 
       if (user.role_id == "1") {
@@ -103,7 +106,7 @@ module.exports = {
         }
       });
       if (!user)
-        throw "invalid email"
+        throw "Invalid email"
 
       var token = randtoken.generate(25);
       const test = await transporter.sendMail({
@@ -122,7 +125,7 @@ module.exports = {
           }
         });
 
-      var message = "success";
+      var message = "Success";
       return res.send(response(token, message));
     } catch (error) {
       next(error)
@@ -138,11 +141,11 @@ module.exports = {
         }
       })
       if (!user) {
-        throw "link expired resend again"
+        throw "Link expired resend again"
       }
 
       if (params.password != params.confirm_password) {
-        throw 'password and confirm password does not match'
+        throw 'Password and confirm password does not match'
       }
 
       params.password = await bcrypt.hash(params.password, 10);
@@ -155,7 +158,7 @@ module.exports = {
           token: token,
         }
       });
-      var message = "password updated"
+      var message = "Password updated"
       var data = ""
       return res.send(response(data, message));
     } catch (error) {
@@ -343,11 +346,41 @@ module.exports = {
       next(error)
     }
   },
+  stateupdate: async (req, res, next) => {
+    try {
+      const params = req.body;
+
+      const list = await db.state.findAll()
+      
+      list.forEach(async(dbvalue) => {
+            await db.state.update({
+              status: 0,
+            }, {
+              where: {
+                id: dbvalue.dataValues.id
+              }
+            })
+      });
+   
+      const states = await db.state.update({
+        status: 1,
+      }, {
+        where: {
+          id: params.id
+        }
+      })
+
+      return res.send(response({}, "Your detail succesfully updated"));
+    } catch (error) {
+      next(error)
+    }
+  },
   userlist: async (req, res, next) => {
     try {
       const data = await db.User.findAll({
         where: {
           role_id: "3",
+          is_verify: 1
         },
         include: db.user_doc
       });
@@ -407,7 +440,7 @@ module.exports = {
           }
         })
 
-      return res.send(response("updated"));
+      return res.send(response("Updated"));
     } catch (error) {
       next(error)
     }
@@ -443,15 +476,15 @@ module.exports = {
 
         const { startedDate, endDate } = req.body;
         const Op = sequelize.Op;
- 
+
         var public_contest = await db.contests.findAll({
           // groupcount: groupcount,
           // offset: offset,
-          attributes:[
+          attributes: [
             [sequelize.fn("SUM", sequelize.cast(sequelize.col("winning_amount"), 'integer')), "total_winning_amount"],
             [sequelize.fn("SUM", sequelize.cast(sequelize.col("admin_comission"), 'integer')), "total_commission"],
             [sequelize.fn("SUM", sequelize.cast(sequelize.col("contest_size"), 'integer')), "total_players"],
-            [sequelize.fn("COUNT", sequelize.col("id")), "contest_count"],'id','entry_fee','contest_type',
+            [sequelize.fn("COUNT", sequelize.col("id")), "contest_count"], 'id', 'entry_fee', 'contest_type',
           ],
           where: {
             category_id: categoryId,
@@ -460,16 +493,16 @@ module.exports = {
               [Op.between]: [new Date(startedDate).setHours(0, 0, 0, 0), new Date(endDate).setHours(23, 59, 59, 999)]
             }
           },
-          group:['entry_fee']
+          group: ['entry_fee']
         });
 
 
         var private_contest = await db.contests.findAll({
-          attributes:[
+          attributes: [
             [sequelize.fn("SUM", sequelize.cast(sequelize.col("winning_amount"), 'integer')), "total_winning_amount"],
             [sequelize.fn("SUM", sequelize.cast(sequelize.col("admin_comission"), 'integer')), "total_commission"],
             [sequelize.fn("SUM", sequelize.cast(sequelize.col("contest_size"), 'integer')), "total_players"],
-            [sequelize.fn("COUNT", sequelize.col("id")), "contest_count"],'id','entry_fee','contest_type',
+            [sequelize.fn("COUNT", sequelize.col("id")), "contest_count"], 'id', 'entry_fee', 'contest_type',
           ],
           where: {
             category_id: categoryId,
@@ -478,13 +511,13 @@ module.exports = {
               [Op.between]: [new Date(startedDate).setHours(0, 0, 0, 0), new Date(endDate).setHours(23, 59, 59, 999)]
             }
           },
-          group:['entry_fee']
+          group: ['entry_fee']
         });
 
         var total_commission_players = await db.contests.findAll({
-          attributes:[
+          attributes: [
             [sequelize.fn("SUM", sequelize.cast(sequelize.col("admin_comission"), 'integer')), "total_commission"],
-            [sequelize.fn("SUM", sequelize.cast(sequelize.col("contest_size"), 'integer')), "total_players"],  
+            [sequelize.fn("SUM", sequelize.cast(sequelize.col("contest_size"), 'integer')), "total_players"],
           ],
           where: {
             category_id: categoryId,
@@ -493,17 +526,11 @@ module.exports = {
             }
           },
         });
-       
-        var data = { category,total_commission_players, public_contest,private_contest}
+
+        var data = { category, total_commission_players, public_contest, private_contest }
 
         return res.send(response(data));
       }
-
-
-
-
-
-
     } catch (error) {
       next(error);
     }
@@ -518,7 +545,7 @@ module.exports = {
           id: id.id,
         }
       });
-      return res.send(response("categroy list updated"));
+      return res.send(response("Category list updated"));
     } catch (error) {
       next(error)
     }
@@ -541,7 +568,7 @@ module.exports = {
           id: cmsId,
         }
       });
-      return res.send(response(data, "cms list view"));
+      return res.send(response(data, "CMS list view"));
 
     } catch (error) {
       next(error)
@@ -557,7 +584,7 @@ module.exports = {
           id: id.id,
         }
       });
-      return res.send(response(cmslist, "cms list updated"));
+      return res.send(response(cmslist, "CMS list updated"));
 
     } catch (error) {
       next(error)
@@ -594,16 +621,16 @@ module.exports = {
 
 
       const test = await db.User.create(params);
-      return res.send(response(test, "sub admin created please login "));
+      return res.send(response(test, "Sub admin created please login "));
     } catch (error) {
       if (error.fields && error.fields.hasOwnProperty('email')) {
         return next("Email already registered!");
       }
       if (error.fields && error.fields.hasOwnProperty('mob_no')) {
-        return next("mobile no already registered!");
+        return next("Mobile no already registered!");
       }
       if (error.fields && error.fields.hasOwnProperty('username')) {
-        return next("username already registered!");
+        return next("Username already registered!");
       }
       next(error)
     }
@@ -650,7 +677,7 @@ module.exports = {
             id: params.id
           }
         });
-      return res.send(response("updated successfully."));
+      return res.send(response("Updated successfully."));
 
     } catch (error) {
       next(error)
@@ -665,7 +692,7 @@ module.exports = {
           id: user_id
         }
       });
-      return res.send(response("deleted successfully."));
+      return res.send(response("Deleted successfully."));
     } catch (error) {
       next(error)
 
@@ -676,11 +703,17 @@ module.exports = {
   notificationcreate: async (req, res, next) => {
     try {
       const params = req.body;
-      params.notification_type = 1;
+      params.notification_type = 2;
       params.status = 0;
 
       params.user_id = 1;
-      db.notifications.create(params);
+      db.notifications.create({
+        notification_type: 1,
+        user_id: 1,
+        status: 0,
+        title: params.title,
+        notification: params.notification
+      });
 
       const users = await db.User.findAll({
         where: {
@@ -688,8 +721,6 @@ module.exports = {
           status: 1
         }
       })
-
-
 
       users.map((user) => {
         params.user_id = user.id;
@@ -703,19 +734,19 @@ module.exports = {
           }
         }
 
-        if(user.device_token){
-        firbase().send(message)
-          .then((response) => {
-            // Response is a message ID string.
-            console.log('Successfully sent message:', response);
-          })
-          .catch((error) => {
-            console.log('Error sending message:', error);
-          });
+        if (user.device_token) {
+          firbase().send(message)
+            .then((response) => {
+              // Response is a message ID string.
+              console.log('Successfully sent message:', response);
+            })
+            .catch((error) => {
+              console.log('Error sending message:', error);
+            });
         }
       })
 
-      return res.send(response("success"));
+      return res.send(response("Success"));
 
     } catch (error) {
       next(error)
@@ -725,7 +756,10 @@ module.exports = {
   notificationlist: async (req, res, next) => {
     try {
       const data = await db.notifications.findAll({
-        group: ['title']
+        where: {
+          notification_type: 1
+        },
+        // group: ['title']
       });
       return res.send(response(data));
     } catch (error) {
@@ -771,7 +805,7 @@ module.exports = {
           }
         })
 
-      successmessage = "message sent"
+      successmessage = "Message sent"
       var data = ""
       return res.send(response(data, successmessage));
     } catch (error) {
@@ -790,12 +824,19 @@ module.exports = {
           is_verified: 1
         },
         include: [
-          { model: db.User, attributes: ["firstName"] }
+          { model: db.User, attributes: ["firstName"] },
+          { model: db.bankdetails }
         ]
       })
 
-      return res.send(response(kyclist));
-
+      list = []
+      kyclist.map((item) => {
+        if(item.dataValues.bankdetail){
+          list.push(item)
+        }
+       
+      })
+      return res.send(response(list));
     } catch (error) {
       next(error)
     }
@@ -814,7 +855,7 @@ module.exports = {
       })
 
       if (!user) {
-        return res.send(response({}, "please enter valid detail"));
+        return res.send(response({}, "Please enter valid detail"));
       }
       return res.send(response(user));
 
@@ -829,9 +870,9 @@ module.exports = {
       const params = req.body;
       const user = await db.User.findOne({
         where: {
-            id:params.user_id
+          id: params.user_id
         }
-    })
+      })
 
       if (params.is_verified == 2) {
 
@@ -847,28 +888,29 @@ module.exports = {
         const kycaccept_notification = await db.notifications.create({
           user_id: params.user_id,
           notification_type: 2,
-          title: "kyc accepted",
-          notification: "your kyc is verified ",
+          title: "Kyc accepted",
+          notification: "Your kyc is verified ",
           extra_data: null,
           status: 0
         });
-
-        var message = {
-          "token": user.device_token,
-          "notification": {
-            "title": "kyc accepted",
-            "body": "your kyc is verified "
+        if (user.device_token) {
+          var message = {
+            "token": user.device_token,
+            "notification": {
+              "title": "Kyc accepted",
+              "body": "Your kyc is verified "
+            }
           }
+          firbase().send(message)
+            .then((response) => {
+              // Response is a message ID string.
+              console.log('Successfully sent message:', response);
+            })
+            .catch((error) => {
+              console.log('Error sending message:', error);
+            });
         }
-        firbase().send(message)
-          .then((response) => {
-            // Response is a message ID string.
-            console.log('Successfully sent message:', response);
-          })
-          .catch((error) => {
-            console.log('Error sending message:', error);
-          });
-        return res.send(response({}, "kyc status sucessfully updated"));
+        return res.send(response({}, "Kyc status sucessfully updated"));
       } else if (params.is_verified == 3) {
         const profile = await db.user_doc.update({
           is_verified: params.is_verified
@@ -887,23 +929,24 @@ module.exports = {
           extra_data: null,
           status: 0
         });
-
-        var message = {
-          "token": user.device_token,
-          "notification": {
-            "title": "kyc rejected",
-            "body": params.notification
+        if (user.device_token) {
+          var message = {
+            "token": user.device_token,
+            "notification": {
+              "title": "kyc rejected",
+              "body": params.notification
+            }
           }
+          firbase().send(message)
+            .then((response) => {
+              // Response is a message ID string.
+              console.log('Successfully sent message:', response);
+            })
+            .catch((error) => {
+              console.log('Error sending message:', error);
+            });
         }
-        firbase().send(message)
-          .then((response) => {
-            // Response is a message ID string.
-            console.log('Successfully sent message:', response);
-          })
-          .catch((error) => {
-            console.log('Error sending message:', error);
-          });
-        message = "kyc status sucessfully updated"
+        message = "Kyc status sucessfully updated"
         return res.send(response({}, message));
       }
 
@@ -926,7 +969,7 @@ module.exports = {
       } else if (params.duration == 2) {
         var DateFilter = new Date(date.getTime() - (365 * 24 * 60 * 60 * 1000));
       } else {
-        throw "please select valid date"
+        throw "Please select valid date"
       }
 
 
@@ -947,6 +990,294 @@ module.exports = {
 
       var data = { categorydata }
       return res.send(response(data));
+
+    } catch (error) {
+      next(error)
+    }
+  },
+
+  withdrawl_request_list: async (req, res, next) => {
+    try {
+      let limit = 10
+      let offset = 0 + (req.body.page_no - 1) * limit
+
+      const { startedDate, endDate, excel, page_no } = req.body;
+      const Op = sequelize.Op;
+
+
+      var total_transaction = await db.transactions.findAll({
+        order: [
+          ['createdAt', 'DESC']
+        ],
+        where: {
+          added_type: '1',
+          createdAt: {
+            [Op.between]: [new Date(startedDate).setHours(0, 0, 0, 0), new Date(endDate).setHours(23, 59, 59, 999)]
+          }
+        },
+        include: [{
+          model: db.User,
+          attributes: ['firstName', 'mob_no']
+        }]
+      })
+
+      const withdrawal_list = await db.transactions.findAll({
+        limit: limit,
+        offset: offset,
+        order: [
+          ['createdAt', 'DESC']
+        ],
+        where: {
+          added_type: '1',
+          createdAt: {
+            [Op.between]: [new Date(startedDate).setHours(0, 0, 0, 0), new Date(endDate).setHours(23, 59, 59, 999)]
+          }
+        },
+        include: [{
+          model: db.User,
+          attributes: ['firstName', 'mob_no']
+        }]
+      })
+
+      if (excel == 1) {
+
+        const workbook = new excelJS.Workbook();  // Create a new workbook  
+        const worksheet = workbook.addWorksheet("WithdrawalList"); // New Worksheet  
+        const path = "./uploads";  // Path to download excel 
+
+        var tutorials = []
+        total_transaction.map((user) => {
+
+          if (user.dataValues.status == "0") {
+            var txnstatus = "Pending"
+          } else if (user.dataValues.status == "1") {
+            var txnstatus = "Success"
+          } else if (user.dataValues.status == "2") {
+            var txnstatus = "Cancel"
+          }
+
+          if (user.dataValues.added_type == "1") {
+            var type = "Withdrawal"
+          }
+          tutorials.push({
+            firstName: user.User.dataValues.firstName,
+            mob_no: user.User.dataValues.mob_no,
+            txn_amount: user.dataValues.txn_amount,
+            added_type: type,
+            txn_date: user.dataValues.txn_date,
+            txn_time: user.dataValues.txn_time,
+            status: txnstatus
+          });
+        })
+
+        worksheet.columns = [
+          { header: "Name", key: "firstName", width: 10 },
+          { header: "Mobile Number", key: "mob_no", width: 10 },
+          { header: "Transaction Amount", key: "txn_amount", width: 10 },
+          { header: "Transaction Type:", key: "added_type", width: 10 },
+          { header: "Date:", key: "txn_date", width: 10 },
+          { header: "Time:", key: "txn_time", width: 10 },
+          { header: "Status:", key: "status", width: 10 },
+        ];
+        // Making first line in excel bold
+        worksheet.getRow(1).eachCell((cell) => {
+          cell.font = { bold: true };
+        });
+        worksheet.addRows(tutorials);
+        try {
+          const data = await workbook.xlsx.writeFile(`${path}/Withdrawal_Details.xlsx`)
+            .then(() => {
+              res.send(response({
+                // message: "file successfully downloaded",
+                path: `${path}/Withdrawal_Details.xlsx`,
+              }));
+            });
+        } catch (err) {
+          res.send({
+            status: "error",
+            message: "Something went wrong",
+          });
+        }
+
+      }
+
+      var data = { totalcount: total_transaction.length, page_request_count: withdrawal_list.length, withdrawal_list }
+      return res.send(response(data));
+    } catch (error) {
+      next(error)
+    }
+  },
+
+  withdrawl_request_approve: async (req, res, next) => {
+    try {
+      const params = req.body;
+
+
+      if (params.approve == 1) {
+        await db.transactions.update({
+          status: process.env.SUCCESS
+        }, {
+          where: {
+            id: params.id
+          }
+        })
+
+        var Checkwithdrawl = await db.transactions.findOne({
+          where: {
+            id: params.id
+          }
+        })
+
+        var amount = Checkwithdrawl.winning_balance * 100;
+
+        var fundAccounId = await db.User.findOne({
+          where: {
+            id: Checkwithdrawl.user_id
+          }
+        })
+
+        var createPayout = await axios.post(process.env.RAZORPAY_URL + '/payouts', { "account_number": "2323230074158322", "fund_account_id": fundAccounId.fundaccountid, "amount": amount, "currency": "INR", "mode": "IMPS", "purpose": "payout" }, {
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          auth: {
+            username: process.env.RAZORPAY_KEY_ID,
+            password: process.env.RAZORPAY_KEY_SECRET
+          }
+        })
+          .then(function (response) {
+            return response.data;
+          })
+          .catch(function (error) {
+            return error.response.data.error.description;
+          });
+
+        await db.transactions.update({
+          txn_id: createPayout.id,
+          payout_status: process.env.PENDING
+        }, {
+          where: {
+            id: params.id
+          }
+        })
+
+
+        console.log('createPayout->>>>', createPayout)
+      } else if (params.approve == 0) {
+        await db.transactions.update({
+          status: process.env.CANCEL
+        }, {
+          where: {
+            id: params.id
+          }
+        })
+      }
+
+      return res.send(response(Checkwithdrawl));
+    } catch (error) {
+      next(error)
+    }
+  },
+
+  transaction_list: async (req, res, next) => {
+    try {
+      let limit = 10
+      let offset = 0 + (req.body.page_no - 1) * limit
+
+      const { startedDate, endDate, excel } = req.body;
+      const Op = sequelize.Op;
+
+      var transaction_list = await db.transactions.findAll({
+        order: [
+          ['createdAt', 'DESC']
+        ],
+        where: {
+          createdAt: {
+            [Op.between]: [new Date(startedDate).setHours(0, 0, 0, 0), new Date(endDate).setHours(23, 59, 59, 999)]
+          }
+        }
+      })
+
+      var transactions = await db.transactions.findAll({
+        limit: limit,
+        offset: offset,
+        order: [
+          ['createdAt', 'DESC']
+        ],
+        where: {
+          createdAt: {
+            [Op.between]: [new Date(startedDate).setHours(0, 0, 0, 0), new Date(endDate).setHours(23, 59, 59, 999)]
+          }
+        }
+      })
+
+      if (excel == 1) {
+        const workbook = new excelJS.Workbook();  // Create a new workbook  
+        const worksheet = workbook.addWorksheet("My Users"); // New Worksheet  
+        const path = "./uploads";  // Path to download excel 
+
+        var tutorials = []
+        transaction_list.map((user) => {
+
+          if (user.dataValues.status == "0") {
+            var txnstatus = "Pending"
+          } else if (user.dataValues.status == "1") {
+            var txnstatus = "Success"
+          } else if (user.dataValues.status == "2") {
+            var txnstatus = "Cancel"
+          }
+
+          if (user.dataValues.added_type == "1") {
+            var type = "Withdrawal"
+          } else if (user.dataValues.added_type == "2") {
+            var type = "Add Money"
+          } else if (user.dataValues.added_type == "3") {
+            var type = "Ticket purchase"
+          } else if (user.dataValues.added_type == "4") {
+            var type = "Winner Amount"
+          }
+          tutorials.push({
+            txn_id: user.dataValues.txn_id,
+            local_txn_id: user.dataValues.local_txn_id,
+            added_type: type,
+            txn_date: user.dataValues.txn_date,
+            txn_time: user.dataValues.txn_time,
+            txn_amount: user.dataValues.txn_amount,
+            status: txnstatus
+          });
+        })
+
+        worksheet.columns = [
+          { header: "Transaction ID", key: "txn_id", width: 10 },
+          { header: "Local Transaction ID", key: "local_txn_id", width: 10 },
+          { header: "Transaction Type", key: "added_type", width: 10 },
+          { header: "Date:", key: "txn_date", width: 10 },
+          { header: "Time:", key: "txn_time", width: 10 },
+          { header: "Amount:", key: "txn_amount", width: 10 },
+          { header: "Status:", key: "status", width: 10 }
+        ];
+        // Making first line in excel bold
+        worksheet.getRow(1).eachCell((cell) => {
+          cell.font = { bold: true };
+        });
+        worksheet.addRows(tutorials);
+        try {
+          const data = await workbook.xlsx.writeFile(`${path}/Transaction_Detail.xlsx`)
+            .then(() => {
+              res.send(response({
+                // message: "file successfully downloaded",
+                path: `${path}/Transaction_Detail.xlsx`,
+              }));
+            });
+        } catch (err) {
+          res.send({
+            status: "error",
+            message: "Something went wrong",
+          });
+        }
+      }
+
+      return res.send(response({ pagecount: transactions.length, transaction_count: transaction_list.length, transactions }))
 
     } catch (error) {
       next(error)

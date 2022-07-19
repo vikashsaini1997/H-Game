@@ -169,6 +169,7 @@ router.post('/adminprofile-update',upload.single('profile_image'),authorize,admi
 //user//
 router.get('/list-user',authorize ,userController.userlist);
 router.get('/state', authorize, userController.state);
+router.post('/state-update', authorize, userController.stateupdate);
 router.get('/user-id/:id',authorize,userController.usershowedit);
 router.put('/user-update',authorize ,usereditupdate,userController.usereditprofile);
 router.post('/block-user',authorize,blockuserschema,userController.blockuser);
@@ -200,6 +201,11 @@ router.put('/message-reply', authorize, userController.message_reply);
 router.get('/kyc-list',authorize,userController.user_kyc_list);
 router.get('/kyc-userview/:user_id',authorize,userController.user_kyc_view);
 router.post('/kyc-verify',authorize,userController.kyc_verify);
+
+//Payout Request Approve//
+router.post('/user-withdrawal-list',authorize,userController.withdrawl_request_list)
+router.post('/withdrawl-request-approve',authorize,userController.withdrawl_request_approve);
+router.post('/all-transaction-list',authorize,userController.transaction_list)
 
 
 module.exports = router;  

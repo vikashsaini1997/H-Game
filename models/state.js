@@ -1,4 +1,5 @@
 'use strict';
+const { database } = require('firebase-admin');
 const {
   Model
 } = require('sequelize');
@@ -14,7 +15,8 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   state.init({
-    state_name: DataTypes.STRING
+    state_name: DataTypes.STRING,
+    status: DataTypes.INTEGER
   }, {
     sequelize,
     modelName: 'state',

@@ -16,6 +16,7 @@ const user = require("./models/user");
 const db = require("./models");
 const cron = require('node-cron');
 const { v4: uuidv4 } = require('uuid');
+const helpers = require('./helper/Helper')
 
 
 const httpServer = createServer(app);
@@ -80,198 +81,298 @@ app.use(
 
 client.connect();
 
+let clientData = {};
 
 io.on("connection", async (socket) => {
     //await client.quit();
     socket.on("game_play_contest_id", async function (contest_id, userId) {
+        console.log('contest_idadfasdfasdf',contest_id)
 
         client.on('error', (err) => console.log('Redis Client Error', err));
 
+        const CheckUsercontest = await db.contests.findOne({
+            where: {
+                id: contest_id,
+            },
+        });
+
+        if (CheckUsercontest.contest_size < 2) {
+            let socket_key = "connectToRoom" + contest_id
+            let data = {
+                player_message: "Minimum two user required",
+                player_status: true
+            }
+            socket.emit(socket_key, data)
+
+        } else {
+
+            //Game status change//
+            await db.contests.update({
+                status: "2",
+            }, {
+                where: {
+                    id: contest_id,
+                },
+            });
+
+            const CheckAlreadyContest = await db.contests.findOne({
+                where: {
+                    status: ["0","1"],
+                    entry_fee: CheckUsercontest.entry_fee,
+                    category_id:CheckUsercontest.category_id
+                },
+            });
 
 
-        var gameAnnouncedFunction = setInterval(async function () {
-            let EndgameCHeck = await client.get("eg" + contest_id);
-            if (EndgameCHeck != "1") {
+            if (CheckAlreadyContest) {
+            }else{
+                // New contest create//
+                var End_time = Math.floor(new Date().getTime() / 1000) + parseInt(CheckUsercontest.waiting_time);
+                await db.contests.create({
+                    category_id: CheckUsercontest.category_id,
+                    random_id: uuidv4(),
+                    contest_type: 0,
+                    entry_fee: CheckUsercontest.entry_fee,
+                    status: "1",
+                    admin_comission: '0',
+                    winning_amount: '0',
+                    contest_size: '0',
+                    waiting_time: CheckUsercontest.waiting_time,
+                    end_time: End_time,
+                });
+                //New game create end
+            }
 
-                /*  var contestDetails = await db.contests.findOne({
-                     where: {
-                         id: contest_id
-                     }
-                 }) */
+            var gameAnnouncedFunction = setInterval(async function () {
+                let EndgameCHeck = await client.get("eg" + contest_id);
+                if (EndgameCHeck != "1") {
 
-
-
-
-                /* if (contestDetails.announced_numbers != null) {
-                    var nums = contestDetails.announced_numbers.split(",");
-     
-                    //console.log(typeof(nums));
-     
-                    if (nums.indexOf(randomNum.toString()) != -1) {
-                        // number exists for this contest
-                        // do NOTHING
-                        // continue
-                        // console.log("CONTINUE");
-                        return;
-                    }
-                } else {
-                    var nums = [];
-                } */
-
-
-
-
-                const value = await client.get(contest_id);
-                //const contest_count = await client.get("no_"+contest_id);
-
-                //console.log("value----->>>", value);
-                let convArray = value ? value.split(",") : [];
-                //console.log("convArray--->>>", convArray);
-
-                var contestArryFinal = [];
-                if (convArray.length == 0) {
-
-                    while (contestArryFinal.length < 90) {
-                        var r = Math.floor(Math.random() * 90) + 1;
-                        if (contestArryFinal.indexOf(r) === -1) contestArryFinal.push(r);
-                    }
-                    console.log(contestArryFinal);
-                    let sContestArryFinal = contestArryFinal.toString();
-                    await client.set(contest_id, sContestArryFinal);
-                } else {
-                    contestArryFinal = convArray;
-                }
-
-                console.log('arrayData---->>>>', convArray.length)
-
-                /*client.del(contest_id,function (err, reply) {
-                  console.log("Redis_Del-->>>>", reply);
-                  console.log('Redis_data----->>>>',err)
-                }); */
-                let getUser = await client.get("user_" + contest_id);
-                let getUserIDCount = await client.get("userID_" + userId);
-                getUserIDCount = getUserIDCount ? parseInt(getUserIDCount) : 0;
-
-                let end_cnt = 89;
-                console.log("end_cnt<=getUserIDCount------------>>>", end_cnt, getUserIDCount);
-                if (end_cnt <= getUserIDCount) {
-                    await db.contests.update({
-                        announced_numbers: value
-                    }, {
+                    var contestDetails = await db.contests.findOne({
                         where: {
                             id: contest_id
                         }
-                    });
+                    })
 
+                    var winner_status = await db.join_contest_details.findOne({
+                        where: {
+                            contest_id: contest_id,
+                            win_status: "1"
+                        }
+                    })
+
+                
+                    const value = await client.get(contest_id);
+                    let convArray = value ? value.split(",") : [];
+
+                    // helpers.AnncouncedNumberArr
+
+                    var contestArryFinal = [];
+                    if (convArray.length == 0) {
+                        const CheckgameRule = await db.contests.findOne({
+                            where: {
+                                id: contest_id,
+                            },
+                        });
+
+                        let myArray = CheckgameRule.game_rule_number.split("");
+                        var addition = myArray[0];
+                        var NumberValueGame = myArray[1];
+
+                        while (contestArryFinal.length < 90) {
+                            //var r = Math.floor(Math.random() * 90) + 1;
+
+                            // addition, subtract
+                            var randdomNumber = helpers.AnncouncedNumberArr(NumberValueGame, addition)
+                            if (contestArryFinal.indexOf(randdomNumber) === -1) contestArryFinal.push(randdomNumber);
+                        }
+                        let sContestArryFinal = contestArryFinal.toString();
+                        await client.set(contest_id, sContestArryFinal);
+                    } else {
+                        contestArryFinal = convArray;
+                    }
+
+                    let getUser = await client.get("user_" + contest_id);
+                    let getUserIDCount = await client.get("userID_" + userId);
+                    console.log('testerrrrrrrr->>>>',getUserIDCount)
+                    getUserIDCount = getUserIDCount ? parseInt(getUserIDCount) : 0;
+
+                    let end_cnt = 89;
+                    if (end_cnt <= getUserIDCount) {
+                        await db.contests.update({
+                            announced_numbers: value
+                        }, {
+                            where: {
+                                id: contest_id
+                            }
+                        });
+
+                        clearInterval(gameAnnouncedFunction)
+                        //client.set("user_" + contest_id, "")
+                        client.del("user_" + contest_id);
+                        //client.set("userID_" + userId, "")
+                        client.del("userID_" + userId);
+                        client.del(contest_id)
+                    } else {
+
+
+                        let userArray = getUser ? getUser.split(",") : [];
+
+                        let combineArry = userArray.concat([userId.toString()]).filter((x, i, a) => a.indexOf(x) == i);
+
+                        let randomNum = 0;
+
+                        randomNum = contestArryFinal[getUserIDCount];
+
+
+                        getUserIDCount++;
+                        let sGetUserIDCount = getUserIDCount.toString();
+                        await client.set("userID_" + userId, sGetUserIDCount);
+
+                        let sCombineArry = combineArry.toString();
+                        await client.set("user_" + contest_id, sCombineArry);
+
+                        var gameNumbercheck=contestDetails.game_rule_number.split("");
+                        
+                            var addition=gameNumbercheck[0];
+                            var NumberValueGame=gameNumbercheck[1];
+
+                        let data = {
+                            number: parseInt(randomNum),
+                            winner_status: "continue",
+                            player_status: false,
+                            game_symbol:addition,
+                            game_number:NumberValueGame,
+                        }
+                        console.log('data->>>>',data)
+
+                        let socket_key = "connectToRoom" + contest_id
+
+
+                        if (contestDetails.status != 3) {
+                            socket.emit(socket_key, data)
+                        } else {
+                            if (userId == winner_status.user_id) {
+                                let data = {
+                                    winner_status: "winner",
+                                    player_status: false
+                                }
+                                socket.emit(socket_key, data)
+                            } else {
+                                let data = {
+                                    winner_status: "loser",
+                                    player_status: false
+                                }
+                                socket.emit(socket_key, data)
+                            }
+                        }
+                    }
+                } else {
+                    client.del("eg" + contest_id);
+
+                    let winnerUserId = await client.get("userid_const_win" + contest_id);
+
+                    let data = {};
+                    if (winnerUserId == userId.toString()) {
+                        var randomNum = "";
+                        data = {
+                            number: parseInt(randomNum),
+                            winner_status: "winner",
+                            player_status: false
+                        }
+                    } else {
+                        var randomNum = "";
+                        data = {
+                            number: parseInt(randomNum),
+                            winner_status: "loser",
+                            player_status: false
+                        }
+                    }
+                    let socket_key = "connectToRoom" + contest_id
+                    socket.emit(socket_key, data)
+                    client.del("userid_const_win" + contest_id);
                     clearInterval(gameAnnouncedFunction)
-                    //client.set("user_" + contest_id, "")
                     client.del("user_" + contest_id);
                     //client.set("userID_" + userId, "")
                     client.del("userID_" + userId);
-                } else {
-
-
-                    let userArray = getUser ? getUser.split(",") : [];
-
-                    let combineArry = userArray.concat([userId.toString()]).filter((x, i, a) => a.indexOf(x) == i);
-
-
-
-
-                    let randomNum = 0;
-                    //if (contestArryFinal[getUserIDCount]) {
-
-                    console.log("getUserIDCount---->>>", contestArryFinal[getUserIDCount]);
-                    randomNum = contestArryFinal[getUserIDCount];
-                    // }
-                    // else {
-
-                    //     /* randomNum=~~(Math.random() * (90 - 1 + 1) + 1); */
-
-                    //     var nums = convArray;
-                    //     nums.push(randomNum);
-                    //     //nums = nums.join(",");
-                    //     // console.log("convArray--nums->>>", nums);
-                    //     nums = nums.toString();
-                    //     await client.set(contest_id, nums);
-                    // }
-
-
-                    getUserIDCount++;
-                    let sGetUserIDCount = getUserIDCount.toString();
-                    await client.set("userID_" + userId, sGetUserIDCount);
-
-                    let sCombineArry = combineArry.toString();
-                    await client.set("user_" + contest_id, sCombineArry);
-
-
-
-
-                    //console.log('wrong------->>>>>')
-
-                    // console.log('Valusesssss------>>>>', value);
-
-
-                    /*              await db.contests.update({
-                                     announced_numbers: nums
-                                 }, {
-                                     where: {
-                                         id: contest_id
-                                     }
-                                 }) */
-
-
-                    let data = {
-                        number: parseInt(randomNum),
-                        winner_status: "continue",
-                    }
-
-                    console.log('Number', randomNum);
-
-                    console.log('contest_id', contest_id);
-                    let socket_key = "connectToRoom" + contest_id
-
-                    console.log("socket_key", socket_key);
-
-                    //socket.join(contest_id);
-                    socket.emit(socket_key, data)
-
-                    //io.sockets.in(contest_id).emit('connectToRoom_', data)
+                    client.del(contest_id)
 
                 }
-            } else {
-                client.del("eg" + contest_id);
 
-                let winnerUserId = await client.get("userid_const_win" + contest_id);
-                console.log('winnerUserId->>>>', winnerUserId, userId)
-
-                let data = {};
-                if (winnerUserId == userId.toString()) {
-                    var randomNum="";
-                    data = {
-                        number: parseInt(randomNum),
-                        winner_status: "winner"
-                    }
-                } else {
-                    var randomNum="";
-                    data = {
-                        number: parseInt(randomNum),
-                        winner_status: "loser"
-                    }
-                }
-                let socket_key = "connectToRoom" + contest_id
-                socket.emit(socket_key, data)
-                client.del("userid_const_win" + contest_id);
-          
-            }
-
-        }, 5000);
+            }, 5000);
+        }
 
     })
 
+    socket.on("contest_list_on", async function (category_id) {
+        const contest_list_data = await db.contests.findAll({
+            where: {
+                category_id: category_id,
+                status: ['1', '0'],
+                contest_type: '0',
+            },
+            order: [
+                ['entry_fee', 'ASC'],
+            ]
+        });
+
+        var Storedata = [];
+        contest_list_data.forEach(function (item) {
+            var Timervalue = item.end_time - Math.floor(new Date().getTime() / 1000);
+            Storedata.push({
+                'id': item.id,
+                'category_id': item.category_id,
+                'random_id': item.random_id,
+                'contest_type': item.contest_type,
+                'admin_comission': item.admin_comission,
+                'winning_amount': item.winning_amount,
+                'contest_size': item.contest_size,
+                'entry_fee': item.entry_fee,
+                'status': item.status,
+                'waiting': Timervalue,
+                'end_time': item.end_time,
+            });
+        });
+        const contestListKey = "contest_list_emit_" + category_id
+        socket.emit(contestListKey, Storedata);
+    })
+    
+    socket.on("contest_timer_increase", async function (contest_id) {
+        let end_time = Math.floor(new Date().getTime() / 1000) + 120;
+        let OneUserjoin = Math.floor(new Date().getTime() / 1000) + 120;
+        if (contest_id) {
+            const Checkuserjoin = await db.contests.findOne({
+                where: {
+                    id: contest_id,
+                    status: ['1', '0']
+                }
+            });
+            if (Checkuserjoin && Checkuserjoin.contest_size >= 1) {
+                const contest_list_data = await db.contests.update({
+                    end_time: OneUserjoin,
+                    status: "0",
+                },
+                    {
+                        where: {
+                            id: contest_id
+                        }
+                    })
+            } else {
+                const contest_list_data = await db.contests.update({
+                    end_time: end_time,
+                    status: "0",
+                },
+                    {
+                        where: {
+                            id: contest_id
+                        }
+                    })
+            }
+        }
+    })
 });
 
-//Waiting item update start//
+
+//Waiting item update sta//
 // var Tasker = cron.schedule('* * * * * *', async function (req, res) {
 
 //     const contest_table_data = await db.contests.findAll();
@@ -300,42 +401,86 @@ io.on("connection", async (socket) => {
 //     }
 // });
 //Waiting item update stop//
+// cron.schedule('* * * * * *', async function (req, res) {
+//     const Checktime = await db.contests.findAll({
+//         where: {
+//             waiting_time: '0',
+//             contest_size: '0',
+//         }
+//     });
+
+//     Checktime.forEach(async function (item) {
+//         await db.contests.update({
+//             waiting_time: "100",
+//             status: "1"
+//         },
+//             {
+//                 where: {
+//                     id: item.id,
+//                 }
+//             });
+//     });
+
+
+// });
+//Timer update user not add //
+
+//Timer update user not add//
 
 
 /* status updat */
-/* var contestStatus = cron.schedule('* * * * * *', async function (req, res) {
+// var contestStatus = cron.schedule('* * * * * *', async function (req, res) {
 
-    const contest_table_data = await db.contests.findAll({
-        where: {
-            waiting_time: '0',
-            status:'1'
-        },
-    });
-    contest_table_data.forEach(async function (item) {
+//     const contest_table_data = await db.contests.findAll({
+//         where: {
+//             waiting_time: '0',
+//             status:'1',
+//             contest_type:'0'
+//         },
+//     });
+//     contest_table_data.forEach(async function (item) {
 
-        await db.contests.update({
-            status: '2',
-        },
-            {
-                where: {
-                    id: item.id,
-                }
-            });
+//         await db.contests.update({
+//             status: '2',
+//         },
+//             {
+//                 where: {
+//                     id: item.id,
+//                 }
+//             });
 
-            await db.contests.create({
-                category_id: item.category_id,
-                entry_fee: item.entry_fee,
-                waiting_time: '120',
-                contest_type:0,
-                admin_comission: "0",
-                winning_amount: "0",
-                status: "1",
-                contest_size: 0,
-                random_id: uuidv4()
-            })
-    });
-}); */
+//             await db.contests.create({
+//                 category_id: item.category_id,
+//                 entry_fee: item.entry_fee,
+//                 waiting_time: '120',
+//                 contest_type:0,
+//                 admin_comission: "0",
+//                 winning_amount: "0",
+//                 status: "1",
+//                 contest_size: 0,
+//                 random_id: uuidv4()
+//             })
+//     });
+// });
 /* status update sto*/
+
+//user not join contest delete cron//
+// cron.schedule('0 0 */24 * * *', async function(){
+//    const contest_table_data = await db.contests.findAll();
+
+//    contest_table_data.forEach(async function (item) {
+//        if(item.contest_size <= 2){
+//             await db.contests.destroy({
+//                 where: {
+//                 id: item.id
+//                 }
+//             });
+//        }
+//    });
+
+// });
+
+//user not join contest delete cron Stop//
 
 /* var Anncoumentnumber = cron.schedule('* * * * * *', async function (req, res) {
     const contest_table_data = await db.contests.findAll({
